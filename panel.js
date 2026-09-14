@@ -13,6 +13,7 @@ function clear() {
 document.getElementById('clear').addEventListener('click', clear);
 chrome.devtools.network.onNavigated.addListener(() => {
   if (!document.getElementById('preserve').checked) clear();
+  if (!document.getElementById('forwarders').hidden) loadForwarders();
 });
 
 function line(parent, text, className) {
@@ -91,4 +92,77 @@ chrome.devtools.network.onRequestFinished.addListener((entry) => {
   renderBody(li, entry);
   list.appendChild(li);
   countEl.textContent = String(++count);
+});
+
+const fwdList = document.getElementById('fwd-list');
+const fwdStatus = document.getElementById('fwd-status');
+const eventsSection = document.getElementById('events');
+const forwardersSection = document.getElementById('forwarders');
+
+const FORWARDERS_EXPR = `(() => {
+  const mp = window.mParticle;
+  if (!mp || typeof mp._getActiveForwarders !== 'function') return { error: 'mParticle not found on page' };
+  try {
+    return mp._getActiveForwarders().map(f => {
+      try {
+        return {
+          name: f.name, id: f.id, initialized: f.initialized,
+          settings: JSON.parse(JSON.stringify(f.settings || {}, (k, v) => typeof v === 'function' ? undefined : v))
+        };
+      } catch (e) {
+        return { name: f.name, id: f.id, error: String(e) };
+      }
+    });
+  } catch (e) {
+    return { error: String(e) };
+  }
+})()`;
+
+function loadForwarders() {
+  chrome.devtools.inspectedWindow.eval(FORWARDERS_EXPR, (result, err) => {
+    fwdList.replaceChildren();
+
+    if (err) {
+      fwdStatus.textContent = err.value ? `eval failed: ${err.value}` : 'eval failed';
+      return;
+    }
+    if (!Array.isArray(result)) {
+      fwdStatus.textContent = (result && result.error) || 'unexpected result';
+      return;
+    }
+    fwdStatus.textContent = result.length ? `${result.length} forwarder(s)` : 'No active forwarders';
+
+    for (const f of result) {
+      const li = document.createElement('li');
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      line(meta, f.name);
+      line(meta, `id: ${f.id}`);
+      line(meta, f.initialized ? 'initialized' : 'not initialized');
+      li.appendChild(meta);
+
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = 'raw';
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(f, null, 2);
+      details.append(summary, pre);
+      li.appendChild(details);
+
+      fwdList.appendChild(li);
+    }
+  });
+}
+
+document.getElementById('refresh').addEventListener('click', loadForwarders);
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const tab = e.target.dataset && e.target.dataset.tab;
+  if (!tab) return;
+  for (const button of document.querySelectorAll('#tabs button')) {
+    button.classList.toggle('active', button.dataset.tab === tab);
+  }
+  eventsSection.hidden = tab !== 'events';
+  forwardersSection.hidden = tab !== 'forwarders';
+  if (tab === 'forwarders') loadForwarders();
 });

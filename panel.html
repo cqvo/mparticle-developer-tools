@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>mParticle Events</title>
+<title>mParticle Developer Tools</title>
 <style>
   :root {
     --bg: #fff;
@@ -24,20 +24,41 @@
     background: var(--bg);
     color: var(--fg);
   }
-  #toolbar {
+  #tabs {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 28px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+  }
+  #tabs button {
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0 2px;
+  }
+  #tabs button.active { font-weight: bold; text-decoration: underline; }
+  #toolbar, #fwd-toolbar {
     display: flex;
     gap: 8px;
     align-items: center;
     padding: 6px 8px;
     border-bottom: 1px solid var(--border);
     position: sticky;
-    top: 0;
+    top: 28px;
     background: var(--bg);
   }
   #filter { flex: 1; min-width: 80px; }
-  #count { color: var(--muted); }
-  #list { list-style: none; margin: 0; padding: 0; }
-  #list li {
+  #count, #fwd-status { color: var(--muted); }
+  #list, #fwd-list { list-style: none; margin: 0; padding: 0; }
+  #list li, #fwd-list li {
     padding: 6px 8px;
     border-bottom: 1px solid var(--border);
   }
@@ -58,12 +79,25 @@
   summary { cursor: pointer; color: var(--muted); }
 </style>
 <body>
-  <div id="toolbar">
-    <button id="clear">Clear</button>
-    <label><input id="preserve" type="checkbox"> Preserve log</label>
-    <span id="count">0</span>
-    <input id="filter" type="text" value="/webevents/">
+  <div id="tabs">
+    <button data-tab="events" class="active">Events</button>
+    <button data-tab="forwarders">Forwarders</button>
   </div>
-  <ul id="list"></ul>
+  <section id="events">
+    <div id="toolbar">
+      <button id="clear">Clear</button>
+      <label><input id="preserve" type="checkbox"> Preserve log</label>
+      <span id="count">0</span>
+      <input id="filter" type="text" value="/webevents/">
+    </div>
+    <ul id="list"></ul>
+  </section>
+  <section id="forwarders" hidden>
+    <div id="fwd-toolbar">
+      <button id="refresh">Refresh</button>
+      <span id="fwd-status"></span>
+    </div>
+    <ul id="fwd-list"></ul>
+  </section>
   <script src="panel.js"></script>
 </body>
