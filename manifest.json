@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "mParticle Events",
+  "name": "mParticle Developer Tools",
   "version": "0.1.0",
   "description": "Inspect mParticle events on the current page.",
   "devtools_page": "devtools.html"

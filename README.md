@@ -1,4 +1,4 @@
-# mParticle Events
+# mParticle Developer Tools
 
 Chrome DevTools extension that lists the network requests a page sends to mParticle's events API.
 
@@ -11,4 +11,4 @@ The filter box matches anywhere in the request URL and defaults to `/webevents/`
 events API path on both the default host (`www.mparticle.com`) and custom CNAME hosts configured
 via `v1/v2/v3SecureServiceUrl`. Change it if you need to catch something else.
 
-Package for the Web Store: `git archive --format=zip -o mparticle-events.zip HEAD` (manifest lands at the zip root).
+Package for the Web Store: `git archive --format=zip -o mparticle-developer-tools.zip HEAD` (manifest lands at the zip root).
