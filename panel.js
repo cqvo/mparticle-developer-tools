@@ -38,45 +38,31 @@ function summarize(event) {
   return parts.join(' ');
 }
 
-function renderBody(li, entry) {
-  const text = entry.request.postData && entry.request.postData.text;
-  if (!text) {
-    for (const p of entry.request.queryString || []) line(li, `${p.name}=${p.value}`, 'param');
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    const pre = document.createElement('pre');
-    pre.textContent = text;
-    li.appendChild(pre);
-    return;
-  }
-
-  if (parsed && Array.isArray(parsed.events)) {
-    for (const event of parsed.events) line(li, summarize(event), 'event');
-  }
-
+function raw(li, value) {
   const details = document.createElement('details');
   const summary = document.createElement('summary');
   summary.textContent = 'raw';
   const pre = document.createElement('pre');
-  pre.textContent = JSON.stringify(parsed, null, 2);
+  pre.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   details.append(summary, pre);
   li.appendChild(details);
 }
 
-chrome.devtools.network.onRequestFinished.addListener((entry) => {
-  const filter = filterInput.value.toLowerCase();
-  if (!entry.request.url.toLowerCase().includes(filter)) return;
-  if (document.getElementById('hide-forwarding').checked && /\/Forwarding(\?|$)/.test(entry.request.url)) return;
+function parseBody(entry) {
+  const text = entry.request.postData && entry.request.postData.text;
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
 
+function row(entry, when) {
   const li = document.createElement('li');
   const meta = document.createElement('div');
   meta.className = 'meta';
-  line(meta, time(entry.startedDateTime));
+  line(meta, time(when));
   line(meta, entry.request.method);
   line(meta, String(entry.response.status));
 
@@ -89,10 +75,34 @@ chrome.devtools.network.onRequestFinished.addListener((entry) => {
   }
   line(meta, where, 'url');
   li.appendChild(meta);
-
-  renderBody(li, entry);
   list.appendChild(li);
   countEl.textContent = String(++count);
+  return li;
+}
+
+chrome.devtools.network.onRequestFinished.addListener((entry) => {
+  const filter = filterInput.value.toLowerCase();
+  if (!entry.request.url.toLowerCase().includes(filter)) return;
+  if (document.getElementById('hide-forwarding').checked && /\/Forwarding(\?|$)/.test(entry.request.url)) return;
+
+  const body = parseBody(entry);
+
+  if (body && Array.isArray(body.events)) {
+    for (const event of body.events) {
+      const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
+      const li = row(entry, when);
+      line(li, summarize(event), 'event');
+      raw(li, event);
+    }
+    return;
+  }
+
+  const li = row(entry, entry.startedDateTime);
+  if (body === undefined) {
+    for (const p of entry.request.queryString || []) line(li, `${p.name}=${p.value}`, 'param');
+  } else {
+    raw(li, body);
+  }
 });
 
 const fwdList = document.getElementById('fwd-list');

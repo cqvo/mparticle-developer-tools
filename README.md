@@ -6,8 +6,8 @@ Load: chrome://extensions → Developer mode → Load unpacked → this folder. 
 
 Use: open Chrome DevTools on any page and go to the "mParticle" tab.
 
-Events tab: requests are listed as they finish, with the event summaries from the POST body
-(expand "raw" for the full JSON). "Upload" calls `mParticle.upload()` on the page to flush the
+Events tab: each event in a batch is listed as its own row as requests finish
+(expand "raw" for the event JSON). "Upload" calls `mParticle.upload()` on the page to flush the
 queued batch. "Hide /Forwarding" (on by default) drops the kit-forwarding status posts, which
 carry no events. "Preserve log" keeps the list across page navigations.
 
