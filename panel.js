@@ -13,7 +13,9 @@ function clear() {
 document.getElementById('clear').addEventListener('click', clear);
 chrome.devtools.network.onNavigated.addListener(() => {
   if (!document.getElementById('preserve').checked) clear();
-  if (!document.getElementById('forwarders').hidden) loadForwarders();
+  for (const [tab, load] of Object.entries(loaders)) {
+    if (!document.getElementById(tab).hidden) load();
+  }
 });
 
 function line(parent, text, className) {
@@ -125,8 +127,6 @@ chrome.devtools.network.onRequestFinished.addListener((entry) => {
 
 const fwdList = document.getElementById('fwd-list');
 const fwdStatus = document.getElementById('fwd-status');
-const eventsSection = document.getElementById('events');
-const forwardersSection = document.getElementById('forwarders');
 
 const FORWARDERS_EXPR = `(() => {
   const mp = window.mParticle;
@@ -183,7 +183,64 @@ function loadForwarders() {
   });
 }
 
+const idList = document.getElementById('id-list');
+const idStatus = document.getElementById('id-status');
+
+const IDENTITY_EXPR = `(() => {
+  const mp = window.mParticle;
+  if (!mp || !mp.Identity || typeof mp.Identity.getCurrentUser !== 'function') return { error: 'mParticle not found on page' };
+  const u = mp.Identity.getCurrentUser();
+  if (!u) return { error: 'no current user' };
+  const get = (fn) => { try { return fn(); } catch (e) { return String(e); } };
+  return {
+    mpid: get(() => u.getMPID()),
+    deviceId: get(() => mp.getDeviceId()),
+    isLoggedIn: get(() => u.isLoggedIn()),
+    identities: get(() => u.getUserIdentities().userIdentities),
+    attributes: get(() => u.getAllUserAttributes()),
+    consent: get(() => JSON.parse(JSON.stringify(u.getConsentState() || null)))
+  };
+})()`;
+
+function loadIdentity() {
+  chrome.devtools.inspectedWindow.eval(IDENTITY_EXPR, (result, err) => {
+    idList.replaceChildren();
+
+    if (err) {
+      idStatus.textContent = err.value ? `eval failed: ${err.value}` : 'eval failed';
+      return;
+    }
+    if (!result || result.error) {
+      idStatus.textContent = (result && result.error) || 'unexpected result';
+      return;
+    }
+    idStatus.textContent = '';
+
+    const head = document.createElement('li');
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    line(meta, `MPID: ${result.mpid}`);
+    line(meta, `device: ${result.deviceId}`);
+    line(meta, result.isLoggedIn ? 'logged in' : 'logged out');
+    head.appendChild(meta);
+    idList.appendChild(head);
+
+    const li = document.createElement('li');
+    pairs(li, 'identities', result.identities);
+    pairs(li, 'user attributes', result.attributes);
+    if (result.consent) {
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(result.consent, null, 2);
+      expand(li, 'consent').appendChild(pre);
+    }
+    if (li.children.length) idList.appendChild(li);
+  });
+}
+
+const loaders = { forwarders: loadForwarders, identity: loadIdentity };
+
 document.getElementById('refresh').addEventListener('click', loadForwarders);
+document.getElementById('id-refresh').addEventListener('click', loadIdentity);
 
 document.getElementById('tabs').addEventListener('click', (e) => {
   const tab = e.target.dataset && e.target.dataset.tab;
@@ -191,9 +248,8 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   for (const button of document.querySelectorAll('#tabs button')) {
     button.classList.toggle('active', button.dataset.tab === tab);
   }
-  eventsSection.hidden = tab !== 'events';
-  forwardersSection.hidden = tab !== 'forwarders';
-  if (tab === 'forwarders') loadForwarders();
+  for (const s of document.querySelectorAll('section')) s.hidden = s.id !== tab;
+  if (loaders[tab]) loaders[tab]();
 });
 
 document.getElementById('upload').addEventListener('click', () => {

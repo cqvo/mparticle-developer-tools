@@ -45,7 +45,7 @@
     padding: 0 2px;
   }
   #tabs button.active { font-weight: bold; text-decoration: underline; }
-  #toolbar, #fwd-toolbar {
+  #toolbar, #fwd-toolbar, #id-toolbar {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -56,9 +56,9 @@
     background: var(--bg);
   }
   #filter { flex: 1; min-width: 80px; }
-  #count, #fwd-status { color: var(--muted); }
-  #list, #fwd-list { list-style: none; margin: 0; padding: 0; }
-  #list li, #fwd-list li {
+  #count, #fwd-status, #id-status { color: var(--muted); }
+  #list, #fwd-list, #id-list { list-style: none; margin: 0; padding: 0; }
+  #list li, #fwd-list li, #id-list li {
     padding: 6px 8px;
     border-bottom: 1px solid var(--border);
   }
@@ -83,6 +83,7 @@
   <div id="tabs">
     <button data-tab="events" class="active">Events</button>
     <button data-tab="forwarders">Forwarders</button>
+    <button data-tab="identity">Identity</button>
   </div>
   <section id="events">
     <div id="toolbar">
@@ -101,6 +102,13 @@
       <span id="fwd-status"></span>
     </div>
     <ul id="fwd-list"></ul>
+  </section>
+  <section id="identity" hidden>
+    <div id="id-toolbar">
+      <button id="id-refresh">Refresh</button>
+      <span id="id-status"></span>
+    </div>
+    <ul id="id-list"></ul>
   </section>
   <script src="panel.js"></script>
 </body>
