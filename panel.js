@@ -71,6 +71,7 @@ function renderBody(li, entry) {
 chrome.devtools.network.onRequestFinished.addListener((entry) => {
   const filter = filterInput.value.toLowerCase();
   if (!entry.request.url.toLowerCase().includes(filter)) return;
+  if (document.getElementById('hide-forwarding').checked && /\/Forwarding(\?|$)/.test(entry.request.url)) return;
 
   const li = document.createElement('li');
   const meta = document.createElement('div');
