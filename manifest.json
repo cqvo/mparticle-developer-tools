@@ -3,6 +3,5 @@
   "name": "mParticle Events",
   "version": "0.1.0",
   "description": "Inspect mParticle events on the current page.",
-  "action": { "default_popup": "popup.html" },
-  "permissions": ["activeTab", "scripting"]
+  "devtools_page": "devtools.html"
 }
