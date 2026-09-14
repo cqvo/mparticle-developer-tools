@@ -38,14 +38,30 @@ function summarize(event) {
   return parts.join(' ');
 }
 
-function raw(li, value) {
+function expand(li, label) {
   const details = document.createElement('details');
   const summary = document.createElement('summary');
-  summary.textContent = 'raw';
+  summary.textContent = label;
+  details.appendChild(summary);
+  li.appendChild(details);
+  return details;
+}
+
+function raw(li, value) {
   const pre = document.createElement('pre');
   pre.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-  details.append(summary, pre);
-  li.appendChild(details);
+  expand(li, 'raw').appendChild(pre);
+}
+
+function pairs(li, label, obj) {
+  if (!obj || typeof obj !== 'object') return;
+  const keys = Object.keys(obj);
+  if (!keys.length) return;
+  const details = expand(li, `${label} (${keys.length})`);
+  for (const k of keys) {
+    const v = obj[k];
+    line(details, `${k}: ${v !== null && typeof v === 'object' ? JSON.stringify(v) : v}`, 'param');
+  }
 }
 
 function parseBody(entry) {
@@ -92,6 +108,8 @@ chrome.devtools.network.onRequestFinished.addListener((entry) => {
       const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
       const li = row(entry, when);
       line(li, summarize(event), 'event');
+      pairs(li, 'custom_attributes', event.data && event.data.custom_attributes);
+      pairs(li, 'custom_flags', event.data && event.data.custom_flags);
       raw(li, event);
     }
     return;
