@@ -11,7 +11,9 @@ function clear() {
 }
 
 document.getElementById('clear').addEventListener('click', clear);
-chrome.devtools.network.onNavigated.addListener(clear);
+chrome.devtools.network.onNavigated.addListener(() => {
+  if (!document.getElementById('preserve').checked) clear();
+});
 
 function line(parent, text, className) {
   const div = document.createElement('div');
