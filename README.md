@@ -4,8 +4,16 @@ Chrome DevTools extension that lists the network requests a page sends to mParti
 
 Load: chrome://extensions → Developer mode → Load unpacked → this folder. No build step.
 
-Use: open Chrome DevTools on any page and go to the "mParticle" tab. Requests are listed as
-they finish, with the event summaries from the POST body (expand "raw" for the full JSON).
+Use: open Chrome DevTools on any page and go to the "mParticle" tab.
+
+Events tab: requests are listed as they finish, with the event summaries from the POST body
+(expand "raw" for the full JSON). "Upload" calls `mParticle.upload()` on the page to flush the
+queued batch. "Hide /Forwarding" (on by default) drops the kit-forwarding status posts, which
+carry no events. "Preserve log" keeps the list across page navigations.
+
+Forwarders tab: lists the kits returned by `mParticle._getActiveForwarders()` with their id and
+whether they have initialized; expand "raw" for the kit settings. Refreshes on tab switch, page
+navigation, and the "Refresh" button.
 
 The filter box matches anywhere in the request URL and defaults to `/webevents/`, which is the
 events API path on both the default host (`www.mparticle.com`) and custom CNAME hosts configured
