@@ -167,3 +167,12 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   forwardersSection.hidden = tab !== 'forwarders';
   if (tab === 'forwarders') loadForwarders();
 });
+
+document.getElementById('upload').addEventListener('click', () => {
+  chrome.devtools.inspectedWindow.eval(
+    'window.mParticle && typeof window.mParticle.upload === "function" ? (window.mParticle.upload(), "ok") : "mParticle not found on page"',
+    (result, err) => {
+      if (err || result !== 'ok') console.warn('mParticle upload:', err || result);
+    }
+  );
+});
