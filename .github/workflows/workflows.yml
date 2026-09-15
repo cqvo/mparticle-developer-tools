@@ -21,5 +21,6 @@ jobs:
       - run: |
           for f in .github/workflows/*.yml; do
             [ "$f" = .github/workflows/workflows.yml ] && continue
+            act pull_request -l -W "$f" | grep -q pull_request || continue
             act pull_request -W "$f"
           done
