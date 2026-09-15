@@ -2,6 +2,6 @@
   "manifest_version": 3,
   "name": "mParticle Developer Tools",
   "version": "0.1.0",
-  "description": "Inspect mParticle events on the current page.",
+  "description": "Inspect the events and identity calls a page sends to mParticle, plus its forwarders and current user.",
   "devtools_page": "devtools.html"
 }

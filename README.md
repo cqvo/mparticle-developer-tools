@@ -7,7 +7,8 @@
 [![deno](https://img.shields.io/badge/deno-2.9.6-blue?logo=deno)](https://deno.land)
 [![license](https://img.shields.io/github/license/cqvo/mparticle-developer-tools)](LICENSE)
 
-Chrome DevTools extension that lists the network requests a page sends to mParticle's events API.
+Chrome DevTools extension that adds an "mParticle" panel: it lists the events and identity requests a page sends to
+mParticle and lets you inspect the page's `mParticle` SDK instance (forwarders, current user, force upload).
 
 ## Quickstart
 
@@ -41,16 +42,20 @@ Open Chrome DevTools on any page and go to the "mParticle" tab. The dropdown in 
 `mParticle._instances` entry the Forwarders, Identity, and Force Batch Upload features talk to (`default_instance` by
 default).
 
-Events tab: each event in a batch is listed as its own row as requests finish (expand "raw" for the event JSON); expand
-"batch" for the batch-level fields (mpid, consent state, user attributes, device info, ...). Identity API requests
-(`/identity/v1/identify`, `/identity/v1/login`, `/identity/v1/logout`) get one row each, showing the request's
-`known_identities` and the response's `matched_identities` along with the resulting MPID and login state. "Force Batch
-Upload" calls `mParticle.upload()` on the page to flush the queued batch. "Hide /Forwarding" on the Settings tab (on by
-default) drops the kit-forwarding status posts, which carry no events. "Preserve log" keeps the list across page
-navigations.
+Events tab: each event in a batch is listed as its own row as requests finish, with `custom_attributes` and
+`custom_flags` expanding into a key/value grid, "raw" holding the event JSON, and "batch" holding the batch-level fields
+(mpid, consent state, user attributes, device info, ...). Identity API requests (such as `/v1/identify`, `/v1/login` and
+`/v1/logout` on `identity.mparticle.com` or a CNAME host) get one row each, showing the request's `known_identities` and
+the response's `matched_identities` along with the resulting MPID and login state; these are recognized by the
+`known_identities` in the request body rather than by the URL, so the filter only has to let the request through.
+Anything else that passes the filter gets one row per request showing its query string, or its raw body if it has one.
+The upload button (cloud icon, "Force Batch Upload" on hover) calls `mParticle.upload()` on the page to flush the queued
+batch. "Hide /Forwarding" on the Settings tab (on by default) drops the kit-forwarding status posts, which carry no
+events. "Preserve log" keeps the list across page navigations.
 
 Forwarders tab: lists the kits returned by `mParticle._getActiveForwarders()` with their id and whether they have
-initialized; expand "raw" for the kit settings. Refreshes on tab switch, page navigation, and the "Refresh" button.
+initialized; "settings (N)" expands into a key/value grid of the kit's settings when it reports any, and "raw" holds the
+whole record. Refreshes on tab switch, page navigation, an instance change, and the refresh button.
 
 Identity tab: MPID, device id, login state, identities, user attributes and consent state for the current user from
 `mParticle.Identity.getCurrentUser()`. Refreshes like the Forwarders tab.
@@ -66,4 +71,5 @@ it if you need to catch something else.
 `deno task test` runs the unit tests in jsdom. `deno task e2e` builds `dist/`, launches your installed Chrome with the
 extension loaded, opens DevTools on www.mparticle.com and www.google.com, and checks that the panel lists mParticle
 requests on the first and nothing on the second. It opens a visible Chrome window and needs network access; CI runs it
-nightly rather than on every pull request.
+nightly rather than on every pull request. Before pushing, run what CI runs: `deno fmt --check`, `deno lint`,
+`deno task check`, `deno task test`, `deno task build`. AGENTS.md covers the architecture and the test harness.
