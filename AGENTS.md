@@ -1,8 +1,8 @@
 ## What this is
 
 A Manifest V3 Chrome DevTools extension (Deno + TypeScript, no framework, no runtime deps) that adds an "mParticle"
-panel to DevTools. It shows the events a page sends to mParticle's events API and lets you inspect the page's
-`mParticle` SDK instance (forwarders, identity, force upload). See README.md for user-facing behavior.
+panel to DevTools. It shows the events and identity API requests a page sends to mParticle and lets you inspect the
+page's `mParticle` SDK instance (forwarders, identity, force upload). See README.md for user-facing behavior.
 
 ## Commands
 
@@ -39,8 +39,13 @@ Domain terms (Instance, Probe, Forwarder, Identity, Batch) are defined in `CONTE
   module-level values and no value imports, because a probe is shipped to the page as `String(fn)` and any free
   identifier is a ReferenceError there (and fails the tests, which run probes in a bare `vm` context).
 - `src/panel.ts` is the panel logic; its only import is `./probes.ts`. Two data paths:
-  1. Network: `chrome.devtools.network.onRequestFinished` → URL filter / hide-forwarding check → `parseBody` → if the
-     body is `{events: [...]}`, one `<li>` per event; otherwise one row per request.
+  1. Network: `chrome.devtools.network.onRequestFinished` → URL filter / hide-forwarding check → `parseBody`, then one
+     of three shapes. A `{events: [...]}` body renders one bare `<li>` per event — timestamped from the event's own
+     `timestamp_unixtime_ms`, so no method, status or URL is shown. A body with `known_identities` renders one full row
+     (timestamped from `request_timestamp_ms`) labelled with the last path segment of the URL as its "op", and calls
+     `entry.getContent` to fetch the response and append `matched_identities`, the `mpid` and `is_logged_in` to that
+     same row. Both timestamps fall back to `entry.startedDateTime`. Anything else is one row per request: a line per
+     query-string param when there is no body, otherwise the raw body.
   2. Page introspection: `probe(fn, cb)` evaluates `(${String(fn)})(${instanceExpr()})` via
      `chrome.devtools.inspectedWindow.eval`. `instanceExpr()` picks `window.mParticle._instances[<selected>]` (falling
      back to `window.mParticle` for `default_instance`). An eval exception is folded into
@@ -58,7 +63,10 @@ navigation and on instance change. Add a new introspection tab by adding a `<sec
 `panel.html` into jsdom, and injects a fake `chrome` object. `inspectedWindow.eval` is emulated with `node:vm` against a
 fake `window.mParticle`, and results are round-tripped through JSON like Chrome does, so probes are exercised for real,
 not mocked. Use `loadPanel`, `entry` (HAR-ish request), `fakeMp`, and `fakeUser` from the harness; assert against DOM
-selectors. `TZ=UTC` is forced in the harness because `time()` formats in local time.
+selectors. `TZ=UTC` is forced in the harness because `time()` formats in local time. `entry` also takes a
+`responseBody`, which is what `getContent` hands back — identity rows can't be exercised without it. `loadPanel` returns
+a `page` object whose `mParticle` is read through a getter, so a test can reassign it between calls; `page.evals`
+records every eval expression and `page.warnings` every `console.warn` call.
 
 `e2e/mparticle.e2e.ts` is the opt-in end-to-end test. It launches system Chrome (`puppeteer-core`, `channel: 'chrome'`,
 headful because `devtools: true` forces it) with `dist/` loaded and visits each entry in its `SITES` array. For a site
