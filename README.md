@@ -2,7 +2,7 @@
 
 [![test](https://img.shields.io/github/actions/workflow/status/cqvo/mparticle-developer-tools/test.yml?branch=main&label=test)](https://github.com/cqvo/mparticle-developer-tools/actions/workflows/test.yml)
 [![e2e](https://img.shields.io/github/actions/workflow/status/cqvo/mparticle-developer-tools/e2e.yml?label=e2e)](https://github.com/cqvo/mparticle-developer-tools/actions/workflows/e2e.yml)
-[![stable](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?sort=semver&label=stable)](https://github.com/cqvo/mparticle-developer-tools/releases/latest)
+[![stable](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?sort=semver&filter=!*-*&label=stable)](https://github.com/cqvo/mparticle-developer-tools/releases/latest)
 [![beta](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?include_prereleases&sort=semver&filter=*-beta.*&label=beta)](https://github.com/cqvo/mparticle-developer-tools/releases?q=beta)
 [![deno](https://img.shields.io/badge/deno-2.9.6-blue?logo=deno)](https://deno.land)
 
