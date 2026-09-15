@@ -4,12 +4,12 @@ process.env.TZ = 'UTC'; // time() formats in local time; make expectations exact
 import { JSDOM } from 'jsdom';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { transpile } from '@deno/emit';
+import { bundle } from '@deno/emit';
 
 const SRC = new URL('../src/', import.meta.url);
 const PANEL = new URL('panel.ts', SRC);
 const html = readFileSync(new URL('panel.html', SRC), 'utf8');
-const js = (await transpile(PANEL)).get(PANEL.href)!;
+const js = (await bundle(PANEL)).code;
 
 export function loadPanel({ mParticle }: { mParticle?: any } = {}) {
   const page = { mParticle, evals: [] as string[], warnings: [] as unknown[][] }; // the fake inspected page
