@@ -193,12 +193,14 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
   const body = parseBody(entry);
 
   if (typeof body === 'object' && body !== null && Array.isArray((body as { events?: unknown }).events)) {
-    for (const event of (body as { events: MpEvent[] }).events) {
+    const { events, ...batch } = body as { events: MpEvent[] } & Record<string, unknown>;
+    for (const event of events) {
       const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
       const { li, meta } = row(entry, when, true);
       summaryEl(meta, event);
       pairs(li, 'custom_attributes', event.data && event.data.custom_attributes);
       pairs(li, 'custom_flags', event.data && event.data.custom_flags);
+      if (Object.keys(batch).length) raw(li, batch, 'batch');
       raw(li, event);
     }
     return;

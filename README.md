@@ -41,12 +41,13 @@ Open Chrome DevTools on any page and go to the "mParticle" tab. The dropdown in 
 `mParticle._instances` entry the Forwarders, Identity, and Force Batch Upload features talk to (`default_instance` by
 default).
 
-Events tab: each event in a batch is listed as its own row as requests finish (expand "raw" for the event JSON).
-Identity API requests (`/identity/v1/identify`, `/identity/v1/login`, `/identity/v1/logout`) get one row each, showing
-the request's `known_identities` and the response's `matched_identities` along with the resulting MPID and login state.
-"Force Batch Upload" calls `mParticle.upload()` on the page to flush the queued batch. "Hide /Forwarding" on the
-Settings tab (on by default) drops the kit-forwarding status posts, which carry no events. "Preserve log" keeps the list
-across page navigations.
+Events tab: each event in a batch is listed as its own row as requests finish (expand "raw" for the event JSON); expand
+"batch" for the batch-level fields (mpid, consent state, user attributes, device info, ...). Identity API requests
+(`/identity/v1/identify`, `/identity/v1/login`, `/identity/v1/logout`) get one row each, showing the request's
+`known_identities` and the response's `matched_identities` along with the resulting MPID and login state. "Force Batch
+Upload" calls `mParticle.upload()` on the page to flush the queued batch. "Hide /Forwarding" on the Settings tab (on by
+default) drops the kit-forwarding status posts, which carry no events. "Preserve log" keeps the list across page
+navigations.
 
 Forwarders tab: lists the kits returned by `mParticle._getActiveForwarders()` with their id and whether they have
 initialized; expand "raw" for the kit settings. Refreshes on tab switch, page navigation, and the "Refresh" button.

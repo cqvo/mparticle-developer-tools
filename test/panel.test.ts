@@ -82,6 +82,22 @@ describe('events', () => {
     );
   });
 
+  it('shows the batch-level fields as batch', () => {
+    const p = loadPanel();
+    const consent_state = { gdpr: { parking: { consented: true } } };
+    p.request(entry({ body: { events: [ev(), ev()], mpid: '1', consent_state } }));
+
+    const rows = p.$$('#list li');
+    assert.equal(rows.length, 2);
+    for (const li of rows) {
+      assert.deepEqual(labels(li), ['batch', 'raw']);
+      assert.equal(
+        detail(li, 'batch').querySelector('pre')!.textContent,
+        JSON.stringify({ mpid: '1', consent_state }, null, 2),
+      );
+    }
+  });
+
   it('falls back to the request time when the event has no timestamp', () => {
     const p = loadPanel();
     p.request(entry({
