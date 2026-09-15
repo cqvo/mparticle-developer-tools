@@ -4,3 +4,4 @@ README.md export-ignore
 test export-ignore
 package.json export-ignore
 package-lock.json export-ignore
+.github export-ignore
