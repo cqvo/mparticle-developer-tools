@@ -20,7 +20,8 @@ deno task build                   # bundles src/panel.ts + src/devtools.ts to di
 
 CI (`test.yml`) runs, in order: `deno fmt --check`, `deno lint`, `deno task check`, `deno task test`, `deno task build`.
 Run the same sequence before pushing. Changes under `.github/workflows/` or `.actrc` additionally run actionlint and
-`act pull_request` per workflow (`workflows.yml`); `act` is configured via `.actrc`.
+`act pull_request` per workflow (`workflows.yml`); `act` is configured via `.actrc`. `release.yml` and `nightly.yml`
+call `test.yml` as a prerequisite job, so nothing is tagged or published unless it passes.
 
 Load the extension in Chrome via chrome://extensions → Load unpacked → `dist/`.
 

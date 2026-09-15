@@ -9,7 +9,10 @@ on:
 permissions:
   contents: write
 jobs:
+  ci:
+    uses: ./.github/workflows/test.yml
   release:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +31,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.6
-      - run: deno task test && deno task build
+      - run: deno task build
       - run: |
           jq --arg v "${{ steps.tag.outputs.tag }}" '.version_name=$v' dist/manifest.json > m && mv m dist/manifest.json
           (cd dist && zip -r ../mparticle-developer-tools.zip .)
