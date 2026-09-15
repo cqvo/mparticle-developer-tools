@@ -154,29 +154,31 @@ function parseBody(entry: chrome.devtools.network.Request): unknown {
   }
 }
 
-function row(entry: chrome.devtools.network.Request, when: string | number) {
+function row(entry: chrome.devtools.network.Request, when: string | number, bare = false) {
   const li = document.createElement('li');
   const meta = document.createElement('div');
   meta.className = 'meta';
   line(meta, time(when), 'time');
-  line(meta, entry.request.method, 'method');
-  const status = entry.response.status;
-  const statusEl = line(meta, String(status), 'status');
-  statusEl.classList.add(status < 400 ? 'ok' : 'err');
+  if (!bare) {
+    line(meta, entry.request.method, 'method');
+    const status = entry.response.status;
+    const statusEl = line(meta, String(status), 'status');
+    statusEl.classList.add(status < 400 ? 'ok' : 'err');
 
-  let where = entry.request.url;
-  try {
-    const url = new URL(entry.request.url);
-    where = url.host + url.pathname;
-  } catch {
-    // keep the raw URL
+    let where = entry.request.url;
+    try {
+      const url = new URL(entry.request.url);
+      where = url.host + url.pathname;
+    } catch {
+      // keep the raw URL
+    }
+    const urlEl = line(meta, where, 'url');
+    urlEl.title = entry.request.url;
   }
-  const urlEl = line(meta, where, 'url');
-  urlEl.title = entry.request.url;
   li.appendChild(meta);
   list.appendChild(li);
   countEl.textContent = String(++count);
-  return li;
+  return { li, meta };
 }
 
 chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.network.Request) => {
@@ -192,8 +194,8 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
   if (typeof body === 'object' && body !== null && Array.isArray((body as { events?: unknown }).events)) {
     for (const event of (body as { events: MpEvent[] }).events) {
       const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
-      const li = row(entry, when);
-      summaryEl(li, event);
+      const { li, meta } = row(entry, when, true);
+      summaryEl(meta, event);
       pairs(li, 'custom_attributes', event.data && event.data.custom_attributes);
       pairs(li, 'custom_flags', event.data && event.data.custom_flags);
       raw(li, event);
@@ -201,7 +203,7 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
     return;
   }
 
-  const li = row(entry, entry.startedDateTime);
+  const { li } = row(entry, entry.startedDateTime);
   if (body === undefined) {
     for (const p of entry.request.queryString || []) line(li, `${p.name}=${p.value}`, 'param');
   } else {

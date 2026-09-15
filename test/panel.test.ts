@@ -24,14 +24,10 @@ describe('events', () => {
 
     const li = rows[0];
     assert.equal(li.querySelector('.time')!.textContent, '03:04:05');
-    assert.equal(li.querySelector('.method')!.textContent, 'POST');
-    assert.equal(li.querySelector('.status')!.textContent, '202');
-    assert.ok(li.querySelector('.status')!.classList.contains('ok'));
-    assert.equal(li.querySelector('.url')!.textContent, 'jssdks.mparticle.com/v3/JS/key/webevents/events');
-    assert.equal(
-      li.querySelector<HTMLElement>('.url')!.title,
-      'https://jssdks.mparticle.com/v3/JS/key/webevents/events',
-    );
+    assert.equal(li.querySelector('.method'), null);
+    assert.equal(li.querySelector('.status'), null);
+    assert.equal(li.querySelector('.url'), null);
+    assert.ok(li.querySelector('.meta .event'));
     assert.equal(li.querySelector('.type')!.textContent, 'custom_event');
     assert.equal(li.querySelector('.name')!.textContent, 'Checkout');
     assert.equal(rows[1].querySelector('.name')!.textContent, 'Purchase');
