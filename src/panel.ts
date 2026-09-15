@@ -5,6 +5,7 @@ interface MpEvent {
   data?: {
     event_name?: string;
     screen_name?: string;
+    product_action?: { action?: string } | null;
     timestamp_unixtime_ms?: number;
     custom_attributes?: Record<string, unknown>;
     custom_flags?: Record<string, unknown>;
@@ -102,12 +103,13 @@ function time(startedDateTime: string | number) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-// The per-type key that names an event in its header; commerce events are one more entry.
+// How to pull the name an event shows in its header, per event type.
 // 'identity' is not an SDK event type - it is the synthetic row built for identity API requests.
-const NAME_KEY: Record<string, string> = {
-  screen_view: 'screen_name',
-  custom_event: 'event_name',
-  identity: 'event_name',
+const NAME_OF: Record<string, (d: NonNullable<MpEvent['data']>) => unknown> = {
+  screen_view: (d) => d.screen_name,
+  custom_event: (d) => d.event_name,
+  identity: (d) => d.event_name,
+  commerce_event: (d) => d.product_action?.action,
 };
 
 function summaryEl(li: HTMLElement, event: MpEvent) {
@@ -115,8 +117,7 @@ function summaryEl(li: HTMLElement, event: MpEvent) {
   div.className = 'event';
   const type = (event && event.event_type) || '';
   span(div, type, 'type');
-  const key = NAME_KEY[type];
-  const name = key && event.data && event.data[key];
+  const name = event.data && NAME_OF[type]?.(event.data);
   if (name) span(div, String(name), 'name');
   li.appendChild(div);
   return div;
