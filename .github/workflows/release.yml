@@ -1,0 +1,42 @@
+name: release
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        type: choice
+        options: [beta, production]
+        required: true
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Derive tag from manifest
+        id: tag
+        run: |
+          v="v$(jq -r .version src/manifest.json)"
+          if [ "${{ inputs.channel }}" = beta ]; then
+            v="$v-beta.$(( $(git tag -l "$v-beta.*" | wc -l) + 1 ))"
+          elif git rev-parse -q --verify "refs/tags/$v" >/dev/null; then
+            echo "$v already released; bump src/manifest.json first"; exit 1
+          fi
+          echo "tag=$v" >> "$GITHUB_OUTPUT"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - run: deno task test && deno task build
+      - run: |
+          jq --arg v "${{ steps.tag.outputs.tag }}" '.version_name=$v' dist/manifest.json > m && mv m dist/manifest.json
+          (cd dist && zip -r ../mparticle-developer-tools.zip .)
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          pre=
+          [ "${{ inputs.channel }}" = beta ] && pre=1
+          gh release create "$TAG" mparticle-developer-tools.zip ${pre:+--prerelease} \
+            --target "$GITHUB_SHA" --generate-notes --title "$TAG"

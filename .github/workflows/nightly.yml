@@ -16,20 +16,26 @@ jobs:
         id: check
         run: |
           if [ -n "$(git tag --points-at HEAD)" ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
+          v="v$(jq -r .version src/manifest.json)-nightly.$(date -u +%Y%m%d)"
+          echo "tag=$v" >> "$GITHUB_OUTPUT"
       - if: steps.check.outputs.skip != 'true'
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.6
       - if: steps.check.outputs.skip != 'true'
-        run: deno task build && (cd dist && zip -r ../mparticle-developer-tools.zip .)
+        run: |
+          deno task build
+          jq --arg v "${{ steps.check.outputs.tag }}" '.version_name=$v' dist/manifest.json > m && mv m dist/manifest.json
+          (cd dist && zip -r ../mparticle-developer-tools.zip .)
       - if: steps.check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "nightly-$(date -u +%Y%m%d)" mparticle-developer-tools.zip --prerelease --generate-notes --title "Nightly $(date -u +%Y-%m-%d)"
+          TAG: ${{ steps.check.outputs.tag }}
+        run: gh release create "$TAG" mparticle-developer-tools.zip --prerelease --generate-notes --title "Nightly $(date -u +%Y-%m-%d)"
       - name: Prune nightlies older than the newest 7
         if: steps.check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release list --limit 100 --json tagName --jq '.[].tagName | select(startswith("nightly-"))' \
-            | sort -r | tail -n +8 | xargs -r -n1 gh release delete -y --cleanup-tag
+          gh release list --limit 100 --json tagName,createdAt --jq '[.[] | select(.tagName | contains("-nightly."))] | sort_by(.createdAt) | reverse | .[7:] | .[].tagName' \
+            | xargs -r -n1 gh release delete -y --cleanup-tag

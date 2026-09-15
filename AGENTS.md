@@ -60,5 +60,7 @@ selectors. `TZ=UTC` is forced in the harness because `time()` formats in local t
 
 ## Release
 
-`nightly.yml` builds and publishes a `nightly-YYYYMMDD` prerelease zip from `main` daily (skipped if HEAD is already
-tagged), keeping the newest 7. `.gitattributes` `export-ignore` controls what is excluded from archives.
+`nightly.yml` builds and publishes a `vX.Y.Z-nightly.YYYYMMDD` prerelease zip from `main` daily (skipped if HEAD is
+already tagged), keeping the newest 7. `release.yml` (manual, `channel` input) tags `main` as `vX.Y.Z` (release) or
+`vX.Y.Z-beta.N` (prerelease) using the version in `src/manifest.json`. `.gitattributes` `export-ignore` controls what is
+excluded from archives.

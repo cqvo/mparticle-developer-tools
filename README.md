@@ -7,7 +7,8 @@ Chrome DevTools extension that lists the network requests a page sends to mParti
 ### Installing from a release
 
 1. Download `mparticle-developer-tools.zip` from the latest
-   [release](https://github.com/cqvo/mparticle-developer-tools/releases) (nightly prereleases, built from `main`).
+   [release](https://github.com/cqvo/mparticle-developer-tools/releases). Production releases are tagged `vX.Y.Z`, betas
+   are `vX.Y.Z-beta.N` prereleases, and `vX.Y.Z-nightly.YYYYMMDD` prereleases are built from `main` daily.
 2. Unzip it.
 3. In Chrome, go to [chrome://extensions](chrome://extensions) → Developer mode → Load unpacked → the unzipped folder.
 
@@ -18,6 +19,14 @@ Chrome DevTools extension that lists the network requests a page sends to mParti
 3. Install dependencies via `deno install`
 4. Build from source `deno task build`
 5. In Chrome, go to [chrome://extensions](chrome://extensions) → Developer mode → Load unpacked → the `dist/` folder.
+
+### Releasing
+
+Bump `version` in `src/manifest.json` on a branch and merge it to `main`.
+
+Then run the `release` workflow from the Actions tab (or `gh workflow run release.yml -f channel=beta`) and pick `beta`
+or `production`. It runs the tests, builds, tags the current `main` commit, and publishes the zip. Betas are numbered
+automatically; production fails if that version is already tagged.
 
 ## Using the extension
 
