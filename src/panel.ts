@@ -1,22 +1,6 @@
 import { type MpInstance, type ProbeError, probeForwarders, probeIdentity, probeUpload } from './probes.ts';
-
-interface MpEvent {
-  event_type?: string;
-  data?: {
-    event_name?: string;
-    screen_name?: string;
-    product_action?: { action?: string } | null;
-    timestamp_unixtime_ms?: number;
-    custom_attributes?: Record<string, unknown>;
-    custom_flags?: Record<string, unknown>;
-    [k: string]: unknown;
-  };
-}
-
-interface IdentityRequest {
-  request_timestamp_ms?: number;
-  known_identities?: Record<string, unknown>;
-}
+import { classify, parseJson } from './requests.ts';
+import type { MpEvent } from './requests.ts';
 
 interface IdentityResponse {
   mpid?: string;
@@ -27,7 +11,6 @@ interface IdentityResponse {
 const list = document.getElementById('list') as HTMLUListElement;
 const countEl = document.getElementById('count') as HTMLElement;
 const instanceSelect = document.getElementById('instance') as HTMLSelectElement;
-const URL_FILTER = /\/v[1-3]\/(identify|login|logout|.+\/modify|.+\/config|.+\/Forwarding|JS\/[^/]+\/events)/i;
 
 function instanceExpr() {
   const name = instanceSelect.value || 'default_instance';
@@ -183,20 +166,6 @@ function eventDetails(li: HTMLElement, event: MpEvent, batch: Record<string, unk
   section(li, 'Batch Data', batch, 'batch_attributes', false);
 }
 
-function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-function parseBody(entry: chrome.devtools.network.Request): unknown {
-  const text = entry.request.postData && entry.request.postData.text;
-  if (!text) return undefined;
-  return parseJson(text);
-}
-
 function row(entry: chrome.devtools.network.Request, when: string | number, bare = false) {
   const li = document.createElement('li');
   const meta = document.createElement('div');
@@ -225,55 +194,52 @@ function row(entry: chrome.devtools.network.Request, when: string | number, bare
 }
 
 chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.network.Request) => {
-  if (!URL_FILTER.test(entry.request.url)) return;
-  if (
-    (document.getElementById('hide-forwarding') as HTMLInputElement).checked &&
-    /\/Forwarding(\?|$)/.test(entry.request.url)
-  ) return;
+  const hideForwarding = (document.getElementById('hide-forwarding') as HTMLInputElement).checked;
+  const c = classify(entry, { hideForwarding });
+  if (!c) return;
 
-  const body = parseBody(entry);
-
-  if (typeof body === 'object' && body !== null && Array.isArray((body as { events?: unknown }).events)) {
-    const { events, ...batch } = body as { events: MpEvent[] } & Record<string, unknown>;
-    for (const event of events) {
-      const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
-      const { li, meta } = row(entry, when, true);
-      summaryEl(meta, event);
-      eventDetails(li, event, batch);
-      raw(li, event);
-    }
-    return;
-  }
-
-  if (typeof body === 'object' && body !== null && 'known_identities' in body) {
-    const req = body as IdentityRequest;
-    const { li, meta } = row(entry, req.request_timestamp_ms || entry.startedDateTime);
-    const op = entry.request.url.split('?')[0].split('/').pop();
-    const div = summaryEl(meta, { event_type: 'identity', data: { event_name: op } });
-    meta.insertBefore(div, meta.querySelector('.url'));
-    pairs(li, 'known_identities', req.known_identities);
-    raw(li, body);
-
-    entry.getContent((text) => {
-      const parsed = parseJson(text);
-      if (typeof parsed === 'object' && parsed !== null) {
-        const res = parsed as IdentityResponse;
-        if (res.mpid) span(div, `→ ${res.mpid}`, 'attrs-count');
-        if (typeof res.is_logged_in === 'boolean') {
-          span(div, res.is_logged_in ? 'logged in' : 'logged out', res.is_logged_in ? 'ok' : 'muted');
-        }
-        pairs(li, 'matched_identities', res.matched_identities);
+  switch (c.kind) {
+    case 'batch': {
+      for (const { event, when } of c.rows) {
+        const { li, meta } = row(entry, when, true);
+        summaryEl(meta, event);
+        eventDetails(li, event, c.batch);
+        raw(li, event);
       }
-      raw(li, parsed, 'response');
-    });
-    return;
-  }
+      return;
+    }
 
-  const { li } = row(entry, entry.startedDateTime);
-  if (body === undefined) {
-    for (const p of entry.request.queryString || []) line(li, `${p.name}=${p.value}`, 'param');
-  } else {
-    raw(li, body);
+    case 'identity': {
+      const { li, meta } = row(entry, c.when);
+      const div = summaryEl(meta, { event_type: 'identity', data: { event_name: c.op } });
+      meta.insertBefore(div, meta.querySelector('.url'));
+      pairs(li, 'known_identities', c.request.known_identities);
+      raw(li, c.request);
+
+      entry.getContent((text) => {
+        const parsed = parseJson(text);
+        if (typeof parsed === 'object' && parsed !== null) {
+          const res = parsed as IdentityResponse;
+          if (res.mpid) span(div, `→ ${res.mpid}`, 'attrs-count');
+          if (typeof res.is_logged_in === 'boolean') {
+            span(div, res.is_logged_in ? 'logged in' : 'logged out', res.is_logged_in ? 'ok' : 'muted');
+          }
+          pairs(li, 'matched_identities', res.matched_identities);
+        }
+        raw(li, parsed, 'response');
+      });
+      return;
+    }
+
+    case 'other': {
+      const { li } = row(entry, c.when);
+      if (c.body === undefined) {
+        for (const p of entry.request.queryString || []) line(li, `${p.name}=${p.value}`, 'param');
+      } else {
+        raw(li, c.body);
+      }
+      return;
+    }
   }
 });
 

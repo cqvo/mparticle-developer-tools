@@ -28,7 +28,7 @@ Load the extension in Chrome via chrome://extensions → Load unpacked → `dist
 
 ## Architecture
 
-Domain terms (Instance, Probe, Forwarder, Identity, Batch) are defined in `CONTEXT.md`. Four source files matter:
+Domain terms (Instance, Probe, Forwarder, Identity, Batch) are defined in `CONTEXT.md`. Five source files matter:
 
 - `src/devtools.ts` is the devtools page; its only job is `chrome.devtools.panels.create(..., 'panel.html')`.
 - `src/panel.html` is the entire UI (tabs, toolbars, all CSS) as static markup. `panel.ts` never creates the top-level
@@ -38,14 +38,18 @@ Domain terms (Instance, Probe, Forwarder, Identity, Batch) are defined in `CONTE
   `(mp?: MpInstance) => T | { error }`. The file must contain only types and exported function declarations, no
   module-level values and no value imports, because a probe is shipped to the page as `String(fn)` and any free
   identifier is a ReferenceError there (and fails the tests, which run probes in a bare `vm` context).
-- `src/panel.ts` is the panel logic; its only import is `./probes.ts`. Two data paths:
-  1. Network: `chrome.devtools.network.onRequestFinished` → `URL_FILTER` regex / hide-forwarding check → `parseBody`,
-     then one of three shapes. A `{events: [...]}` body renders one bare `<li>` per event — timestamped from the event's
-     own `timestamp_unixtime_ms`, so no method, status or URL is shown. A body with `known_identities` renders one full
-     row (timestamped from `request_timestamp_ms`) labelled with the last path segment of the URL as its "op", and calls
-     `entry.getContent` to fetch the response and append `matched_identities`, the `mpid` and `is_logged_in` to that
-     same row. Both timestamps fall back to `entry.startedDateTime`. Anything else is one row per request: a line per
-     query-string param when there is no body, otherwise the raw body.
+- `src/requests.ts` is a pure, panel-side module: no DOM, no `chrome` calls, and — unlike `probes.ts` — never shipped to
+  the page, so module-level values and imports are fine. It exports `URL_FILTER` (the regex matching the upload and
+  identity paths), `classify(entry, { hideForwarding })`, and the `parseJson`/`parseBody` helpers it uses.
+- `src/panel.ts` is the panel logic; it imports `./probes.ts` and `./requests.ts`. Two data paths:
+  1. Network: `chrome.devtools.network.onRequestFinished` hands the entry to `classify(entry, { hideForwarding })`,
+     which returns `null` for anything dropped (URL misses `URL_FILTER`, or forwarding is hidden) or one of three kinds
+     that panel.ts renders. A `batch` (a `{events: [...]}` body) renders one bare `<li>` per event — timestamped from
+     the event's own `timestamp_unixtime_ms`, so no method, status or URL is shown. An `identity` (a body with
+     `known_identities`) renders one full row (timestamped from `request_timestamp_ms`) labelled with the last path
+     segment of the URL as its "op", and calls `entry.getContent` to fetch the response and append `matched_identities`,
+     the `mpid` and `is_logged_in` to that same row. Both timestamps fall back to `entry.startedDateTime`. `other` is
+     one row per request: a line per query-string param when there is no body, otherwise the raw body.
   2. Page introspection: `probe(fn, cb)` evaluates `(${String(fn)})(${instanceExpr()})` via
      `chrome.devtools.inspectedWindow.eval`. `instanceExpr()` picks `window.mParticle._instances[<selected>]` (falling
      back to `window.mParticle` for `default_instance`). An eval exception is folded into
