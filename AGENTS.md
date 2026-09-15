@@ -20,7 +20,8 @@ deno task build                   # bundles src/panel.ts + src/devtools.ts to di
 
 CI (`test.yml`) runs, in order: `deno fmt --check`, `deno lint`, `deno task check`, `deno task test`, `deno task build`.
 Run the same sequence before pushing. Changes under `.github/workflows/` or `.actrc` additionally run actionlint and
-`act pull_request` per workflow (`workflows.yml`); `act` is configured via `.actrc`.
+`act pull_request` per workflow (`workflows.yml`); `act` is configured via `.actrc`. `release.yml` and `nightly.yml`
+call `test.yml` as a prerequisite job, so nothing is tagged or published unless it passes.
 
 Load the extension in Chrome via chrome://extensions → Load unpacked → `dist/`.
 
@@ -60,5 +61,7 @@ selectors. `TZ=UTC` is forced in the harness because `time()` formats in local t
 
 ## Release
 
-`nightly.yml` builds and publishes a `nightly-YYYYMMDD` prerelease zip from `main` daily (skipped if HEAD is already
-tagged), keeping the newest 7. `.gitattributes` `export-ignore` controls what is excluded from archives.
+`nightly.yml` builds and publishes a `vX.Y.Z-nightly.YYYYMMDD` prerelease zip from `main` daily (skipped if HEAD is
+already tagged), keeping the newest 7. `release.yml` (manual, `channel` input) tags `main` as `vX.Y.Z` (release) or
+`vX.Y.Z-beta.N` (prerelease) using the version in `src/manifest.json`. `.gitattributes` `export-ignore` controls what is
+excluded from archives.
