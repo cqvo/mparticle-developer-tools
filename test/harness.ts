@@ -70,6 +70,7 @@ export function entry({
   method = 'POST',
   status = 202,
   body,
+  responseBody,
   queryString = [],
   startedDateTime = '2026-01-02T03:04:05.000Z',
 }: {
@@ -77,6 +78,7 @@ export function entry({
   method?: string;
   status?: number;
   body?: unknown;
+  responseBody?: unknown;
   queryString?: { name: string; value: string }[];
   startedDateTime?: string;
 } = {}) {
@@ -89,6 +91,15 @@ export function entry({
       postData: body === undefined ? undefined : { text: typeof body === 'string' ? body : JSON.stringify(body) },
     },
     response: { status },
+    getContent: (cb: (content: string, encoding: string) => void) =>
+      cb(
+        responseBody === undefined
+          ? ''
+          : typeof responseBody === 'string'
+          ? responseBody
+          : JSON.stringify(responseBody),
+        '',
+      ),
   };
 }
 

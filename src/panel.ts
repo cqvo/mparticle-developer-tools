@@ -10,6 +10,17 @@ interface MpEvent {
   };
 }
 
+interface IdentityRequest {
+  request_timestamp_ms?: number;
+  known_identities?: Record<string, unknown>;
+}
+
+interface IdentityResponse {
+  mpid?: string;
+  is_logged_in?: boolean;
+  matched_identities?: Record<string, unknown>;
+}
+
 const list = document.getElementById('list') as HTMLUListElement;
 const countEl = document.getElementById('count') as HTMLElement;
 const filterInput = document.getElementById('filter') as HTMLInputElement;
@@ -107,10 +118,10 @@ function expand(li: HTMLElement, label: string) {
   return details;
 }
 
-function raw(li: HTMLElement, value: unknown) {
+function raw(li: HTMLElement, value: unknown, label = 'raw') {
   const pre = document.createElement('pre');
   pre.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-  expand(li, 'raw').appendChild(pre);
+  expand(li, label).appendChild(pre);
 }
 
 function pairs(li: HTMLElement, label: string, obj: unknown) {
@@ -129,14 +140,18 @@ function pairs(li: HTMLElement, label: string, obj: unknown) {
   details.appendChild(kv);
 }
 
-function parseBody(entry: chrome.devtools.network.Request): unknown {
-  const text = entry.request.postData && entry.request.postData.text;
-  if (!text) return undefined;
+function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {
     return text;
   }
+}
+
+function parseBody(entry: chrome.devtools.network.Request): unknown {
+  const text = entry.request.postData && entry.request.postData.text;
+  if (!text) return undefined;
+  return parseJson(text);
 }
 
 function row(entry: chrome.devtools.network.Request, when: string | number, bare = false) {
@@ -168,7 +183,8 @@ function row(entry: chrome.devtools.network.Request, when: string | number, bare
 
 chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.network.Request) => {
   const filter = filterInput.value.toLowerCase();
-  if (!entry.request.url.toLowerCase().includes(filter)) return;
+  const url = entry.request.url.toLowerCase();
+  if (!filter.split('|').some((f) => url.includes(f))) return;
   if (
     (document.getElementById('hide-forwarding') as HTMLInputElement).checked &&
     /\/Forwarding(\?|$)/.test(entry.request.url)
@@ -185,6 +201,30 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
       pairs(li, 'custom_flags', event.data && event.data.custom_flags);
       raw(li, event);
     }
+    return;
+  }
+
+  if (typeof body === 'object' && body !== null && 'known_identities' in body) {
+    const req = body as IdentityRequest;
+    const { li, meta } = row(entry, req.request_timestamp_ms || entry.startedDateTime);
+    const op = entry.request.url.split('?')[0].split('/').pop();
+    const div = summaryEl(meta, { event_type: 'identity', data: { event_name: op } });
+    meta.insertBefore(div, meta.querySelector('.url'));
+    pairs(li, 'known_identities', req.known_identities);
+    raw(li, body);
+
+    entry.getContent((text) => {
+      const parsed = parseJson(text);
+      if (typeof parsed === 'object' && parsed !== null) {
+        const res = parsed as IdentityResponse;
+        if (res.mpid) span(div, `→ ${res.mpid}`, 'attrs-count');
+        if (typeof res.is_logged_in === 'boolean') {
+          span(div, res.is_logged_in ? 'logged in' : 'logged out', res.is_logged_in ? 'ok' : 'muted');
+        }
+        pairs(li, 'matched_identities', res.matched_identities);
+      }
+      raw(li, parsed, 'response');
+    });
     return;
   }
 
