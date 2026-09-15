@@ -177,8 +177,7 @@ describe('events', () => {
 
     it('matches case-insensitively', () => {
       const p = loadPanel();
-      p.$<HTMLInputElement>('#filter')!.value = '/EVENTS';
-      p.request(entry({ body: 'x' }));
+      p.request(entry({ url: 'https://x.test/V2/JS/key/Events', body: 'x' }));
       assert.equal(p.$$('#list li').length, 1);
     });
 
@@ -191,20 +190,24 @@ describe('events', () => {
       assert.equal(p.$$('#list li').length, 1);
     });
 
-    it('matches everything when empty', () => {
+    it('matches the identity endpoints', () => {
       const p = loadPanel();
-      p.$<HTMLInputElement>('#filter')!.value = '';
-      p.request(entry({ url: 'https://example.com/other', body: 'x' }));
+      p.request(entry({ url: 'https://identity.mparticle.com/v1/identify', body: 'x' }));
+      p.request(entry({ url: 'https://identity.mparticle.com/v1/login', body: 'x' }));
+      p.request(entry({ url: 'https://identity.mparticle.com/v1/1234/modify', body: 'x' }));
+      assert.equal(p.$$('#list li').length, 3);
+    });
+
+    it('matches the config endpoint', () => {
+      const p = loadPanel();
+      p.request(entry({ url: 'https://jssdkcdns.mparticle.com/JS/v2/key/config', body: 'x' }));
       assert.equal(p.$$('#list li').length, 1);
     });
 
-    it('matches any of several |-separated substrings', () => {
+    it('ignores a path with no version segment', () => {
       const p = loadPanel();
-      p.$<HTMLInputElement>('#filter')!.value = 'a|b';
-      p.request(entry({ url: 'https://x.test/aaa', body: 'x' }));
-      p.request(entry({ url: 'https://x.test/bbb', body: 'x' }));
-      p.request(entry({ url: 'https://x.test/zzz', body: 'x' }));
-      assert.deepEqual(p.$$('#list li .url').map((e) => e.textContent), ['x.test/aaa', 'x.test/bbb']);
+      p.request(entry({ url: 'https://example.com/events', body: 'x' }));
+      assert.equal(p.$$('#list li').length, 0);
     });
   });
 
@@ -286,7 +289,7 @@ describe('events', () => {
       assert.deepEqual(labels(li), ['known_identities (2)', 'raw', 'matched_identities (2)', 'response']);
     });
 
-    it('matches the default filter', () => {
+    it('matches the URL filter', () => {
       const p = loadPanel();
       p.request(entry({ url: 'https://identity.mparticle.com/v1/identify', body: req() }));
       assert.equal(p.$$('#list li').length, 1);
@@ -308,27 +311,26 @@ describe('events', () => {
 
   describe('hide /Forwarding', () => {
     const forwarding = (p: Panel, url: string) => {
-      p.$<HTMLInputElement>('#filter')!.value = '';
       p.request(entry({ url, body: 'x' }));
     };
 
     it('drops /Forwarding and /Forwarding?x=1 while checked', () => {
       const p = loadPanel();
-      forwarding(p, 'https://example.com/Forwarding');
-      forwarding(p, 'https://example.com/Forwarding?x=1');
+      forwarding(p, 'https://example.com/v2/JS/key/Forwarding');
+      forwarding(p, 'https://example.com/v2/JS/key/Forwarding?x=1');
       assert.equal(p.$$('#list li').length, 0);
     });
 
     it('shows them when unchecked', () => {
       const p = loadPanel();
       p.$<HTMLInputElement>('#hide-forwarding')!.checked = false;
-      forwarding(p, 'https://example.com/Forwarding');
+      forwarding(p, 'https://example.com/v2/JS/key/Forwarding');
       assert.equal(p.$$('#list li').length, 1);
     });
 
     it('never drops /ForwardingX', () => {
       const p = loadPanel();
-      forwarding(p, 'https://example.com/ForwardingX');
+      forwarding(p, 'https://example.com/v2/JS/key/ForwardingX');
       assert.equal(p.$$('#list li').length, 1);
     });
   });
@@ -367,9 +369,8 @@ describe('events', () => {
 
   it('keeps an unparseable URL as-is', () => {
     const p = loadPanel();
-    p.$<HTMLInputElement>('#filter')!.value = '';
-    p.request(entry({ url: 'not a url', body: 'x' }));
-    assert.equal(p.$('#list li .url')!.textContent, 'not a url');
+    p.request(entry({ url: 'not a url /v3/JS/key/events', body: 'x' }));
+    assert.equal(p.$('#list li .url')!.textContent, 'not a url /v3/JS/key/events');
   });
 
   it('collapses every expand', () => {

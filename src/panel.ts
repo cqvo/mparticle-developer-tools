@@ -25,8 +25,8 @@ interface IdentityResponse {
 
 const list = document.getElementById('list') as HTMLUListElement;
 const countEl = document.getElementById('count') as HTMLElement;
-const filterInput = document.getElementById('filter') as HTMLInputElement;
 const instanceSelect = document.getElementById('instance') as HTMLSelectElement;
+const URL_FILTER = /\/v[1-3]\/(identify|login|logout|.+\/modify|.+\/config|.+\/Forwarding|.+\/events)/i;
 
 function instanceExpr() {
   const name = instanceSelect.value || 'default_instance';
@@ -224,9 +224,7 @@ function row(entry: chrome.devtools.network.Request, when: string | number, bare
 }
 
 chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.network.Request) => {
-  const filter = filterInput.value.toLowerCase();
-  const url = entry.request.url.toLowerCase();
-  if (!filter.split('|').some((f) => url.includes(f))) return;
+  if (!URL_FILTER.test(entry.request.url)) return;
   if (
     (document.getElementById('hide-forwarding') as HTMLInputElement).checked &&
     /\/Forwarding(\?|$)/.test(entry.request.url)

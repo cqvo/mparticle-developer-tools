@@ -66,11 +66,11 @@ whole record. Refreshes on tab switch, page navigation, an instance change, and 
 Identity tab: MPID, device id, login state, identities, user attributes and consent state for the current user from
 `mParticle.Identity.getCurrentUser()`. Refreshes like the Forwarders tab.
 
-The URL filter on the Settings tab matches anywhere in the request URL, and `|` separates alternatives: a request is
-kept if its URL contains any of the `|`-separated substrings. It defaults to `/events|identity`: `/events` matches the
-SDK's upload path (`.../v3/JS/<key>/events` on the default host `jssdks.mparticle.com`, and the same path on CNAME hosts
-configured via the `v2SecureServiceUrl`/`v3SecureServiceUrl` options), and `identity` matches the identity API. Change
-it if you need to catch something else.
+The panel lists only requests whose URL matches a fixed pattern covering mParticle's endpoints under `/v1/` through
+`/v3/`: the identity API (`identify`, `login`, `logout`, `modify`), the remote config, `/Forwarding`, and the event
+upload path (`.../v3/JS/<key>/events` on the default host `jssdks.mparticle.com`, and the same path on CNAME hosts
+configured via the `v2SecureServiceUrl`/`v3SecureServiceUrl` options). The pattern is not configurable; the Settings tab
+holds just the "Hide /Forwarding" toggle.
 
 ## Development
 
