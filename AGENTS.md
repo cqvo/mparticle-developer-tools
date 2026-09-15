@@ -29,22 +29,22 @@ Load the extension in Chrome via chrome://extensions → Load unpacked → `dist
 Domain terms (Instance, Probe, Forwarder, Identity, Batch) are defined in `CONTEXT.md`. Four source files matter:
 
 - `src/devtools.ts` is the devtools page; its only job is `chrome.devtools.panels.create(..., 'panel.html')`.
-- `src/panel.html` is the entire UI (tabs, toolbars, all CSS) as static markup. `panel.ts` never creates the
-  top-level layout, only list rows.
-- `src/probes.ts` holds the page-side code: the `MpInstance` type (every member optional, since the page can run any
-  SDK version) and the probes `probeForwarders`, `probeIdentity`, `probeUpload`, each a plain exported function
+- `src/panel.html` is the entire UI (tabs, toolbars, all CSS) as static markup. `panel.ts` never creates the top-level
+  layout, only list rows.
+- `src/probes.ts` holds the page-side code: the `MpInstance` type (every member optional, since the page can run any SDK
+  version) and the probes `probeForwarders`, `probeIdentity`, `probeUpload`, each a plain exported function
   `(mp?: MpInstance) => T | { error }`. The file must contain only types and exported function declarations, no
   module-level values and no value imports, because a probe is shipped to the page as `String(fn)` and any free
   identifier is a ReferenceError there (and fails the tests, which run probes in a bare `vm` context).
 - `src/panel.ts` is the panel logic; its only import is `./probes.ts`. Two data paths:
-  1. Network: `chrome.devtools.network.onRequestFinished` → URL filter / hide-forwarding check → `parseBody` →
-     if the body is `{events: [...]}`, one `<li>` per event; otherwise one row per request.
+  1. Network: `chrome.devtools.network.onRequestFinished` → URL filter / hide-forwarding check → `parseBody` → if the
+     body is `{events: [...]}`, one `<li>` per event; otherwise one row per request.
   2. Page introspection: `probe(fn, cb)` evaluates `(${String(fn)})(${instanceExpr()})` via
-     `chrome.devtools.inspectedWindow.eval`. `instanceExpr()` picks `window.mParticle._instances[<selected>]`
-     (falling back to `window.mParticle` for `default_instance`). An eval exception is folded into
-     `{ error: 'eval failed: ...' }`, so callbacks see one shape: the probe's return value or `{ error }`. Probe
-     results must be JSON-serializable (Chrome serializes eval results; functions are stripped). The instance
-     dropdown (`loadInstances`) is the one remaining raw eval string; it reads `window.mParticle`, not an instance.
+     `chrome.devtools.inspectedWindow.eval`. `instanceExpr()` picks `window.mParticle._instances[<selected>]` (falling
+     back to `window.mParticle` for `default_instance`). An eval exception is folded into
+     `{ error: 'eval failed: ...' }`, so callbacks see one shape: the probe's return value or `{ error }`. Probe results
+     must be JSON-serializable (Chrome serializes eval results; functions are stripped). The instance dropdown
+     (`loadInstances`) is the one remaining raw eval string; it reads `window.mParticle`, not an instance.
 
 `loaders` maps tab id → refresh function; `reloadVisible()` re-runs the loader for whichever tab is showing on
 navigation and on instance change. Add a new introspection tab by adding a `<section id=X>` in `panel.html`, a
@@ -53,11 +53,10 @@ navigation and on instance change. Add a new introspection tab by adding a `<sec
 ## Tests
 
 `test/harness.ts` bundles `panel.ts` (and its `probes.ts` import) into one plain script with `@deno/emit`, loads
-`panel.html` into jsdom, and injects a fake `chrome` object. `inspectedWindow.eval` is emulated with `node:vm`
-against a fake `window.mParticle`, and results are round-tripped through JSON like Chrome does, so probes are
-exercised for real, not mocked. Use
-`loadPanel`, `entry` (HAR-ish request), `fakeMp`, and `fakeUser` from the harness; assert against DOM selectors.
-`TZ=UTC` is forced in the harness because `time()` formats in local time.
+`panel.html` into jsdom, and injects a fake `chrome` object. `inspectedWindow.eval` is emulated with `node:vm` against a
+fake `window.mParticle`, and results are round-tripped through JSON like Chrome does, so probes are exercised for real,
+not mocked. Use `loadPanel`, `entry` (HAR-ish request), `fakeMp`, and `fakeUser` from the harness; assert against DOM
+selectors. `TZ=UTC` is forced in the harness because `time()` formats in local time.
 
 ## Release
 
