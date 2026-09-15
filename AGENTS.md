@@ -39,10 +39,10 @@ Domain terms (Instance, Probe, Forwarder, Identity, Batch) are defined in `CONTE
   module-level values and no value imports, because a probe is shipped to the page as `String(fn)` and any free
   identifier is a ReferenceError there (and fails the tests, which run probes in a bare `vm` context).
 - `src/panel.ts` is the panel logic; its only import is `./probes.ts`. Two data paths:
-  1. Network: `chrome.devtools.network.onRequestFinished` → URL filter / hide-forwarding check → `parseBody`, then one
-     of three shapes. A `{events: [...]}` body renders one bare `<li>` per event — timestamped from the event's own
-     `timestamp_unixtime_ms`, so no method, status or URL is shown. A body with `known_identities` renders one full row
-     (timestamped from `request_timestamp_ms`) labelled with the last path segment of the URL as its "op", and calls
+  1. Network: `chrome.devtools.network.onRequestFinished` → `URL_FILTER` regex / hide-forwarding check → `parseBody`,
+     then one of three shapes. A `{events: [...]}` body renders one bare `<li>` per event — timestamped from the event's
+     own `timestamp_unixtime_ms`, so no method, status or URL is shown. A body with `known_identities` renders one full
+     row (timestamped from `request_timestamp_ms`) labelled with the last path segment of the URL as its "op", and calls
      `entry.getContent` to fetch the response and append `matched_identities`, the `mpid` and `is_logged_in` to that
      same row. Both timestamps fall back to `entry.startedDateTime`. Anything else is one row per request: a line per
      query-string param when there is no body, otherwise the raw body.
@@ -71,7 +71,7 @@ records every eval expression and `page.warnings` every `console.warn` call.
 `e2e/mparticle.e2e.ts` is the opt-in end-to-end test. It launches system Chrome (`puppeteer-core`, `channel: 'chrome'`,
 headful because `devtools: true` forces it) with `dist/` loaded and visits each entry in its `SITES` array. For a site
 flagged `mparticle: true` (www.mparticle.com) it asserts in two fail-fast stages: captured requests matching the panel's
-default filter render rows when replayed through `test/harness.ts`, then the real DevTools panel shows rows after a
+`URL_FILTER` regex render rows when replayed through `test/harness.ts`, then the real DevTools panel shows rows after a
 reload. Both stages fall back to a forced upload, because the SDK only sends a batch on a 10s timer, on `upload()`, or
 after a commerce event. A site flagged `mparticle: false` (www.google.com) is a control: no matching requests, empty
 panel, count `0`. Gotchas baked into the file: `pipe: true` is required with `enableExtensions`; the panel target

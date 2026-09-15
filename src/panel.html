@@ -112,13 +112,6 @@
   #settings-form { padding: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 420px; }
   #settings-form label { display: grid; grid-template-columns: 110px 1fr; align-items: center; }
   #settings-form label:has(input[type=checkbox]) { display: flex; gap: 6px; }
-  #settings-form input[type=text] {
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    font: inherit;
-    padding: 3px 6px;
-  }
-  #filter { min-width: 200px; }
   #count { padding: 0 6px; border-radius: 8px; background: var(--code-bg); margin-left: auto; }
   #count, #fwd-status, #id-status { color: var(--muted); }
   #list, #fwd-list, #id-list { list-style: none; margin: 0; padding: 0; }
@@ -226,7 +219,6 @@
   </section>
   <section id="settings" hidden>
     <div id="settings-form">
-      <label>URL filter <input id="filter" type="text" value="/events|identity"></label>
       <label><input id="hide-forwarding" type="checkbox" checked> Hide /Forwarding</label>
     </div>
   </section>
