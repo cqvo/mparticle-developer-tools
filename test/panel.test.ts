@@ -100,8 +100,17 @@ describe('events', () => {
 
     it('matches case-insensitively', () => {
       const p = loadPanel();
-      p.$<HTMLInputElement>('#filter')!.value = '/WEBEVENTS/';
+      p.$<HTMLInputElement>('#filter')!.value = '/EVENTS';
       p.request(entry({ body: 'x' }));
+      assert.equal(p.$$('#list li').length, 1);
+    });
+
+    it('matches the default v3 upload URL', () => {
+      const p = loadPanel();
+      p.request(entry({
+        url: 'https://jssdks.mparticle.com/v3/JS/us2-cbf324c983a1464a8cef51328faad173/events',
+        body: { events: [ev()] },
+      }));
       assert.equal(p.$$('#list li').length, 1);
     });
 

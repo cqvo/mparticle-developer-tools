@@ -9,7 +9,7 @@ const SITES = [
   { url: 'https://www.google.com/', mparticle: false }, // control: must show nothing
 ];
 const DIST = new URL('../dist/', import.meta.url).pathname;
-const FILTER = /\/webevents\/|identity/i; // mirrors the default #filter in panel.html
+const FILTER = /\/events|identity/i; // mirrors the default #filter in panel.html
 const NEXT_PANEL = Deno.build.os === 'darwin' ? 'Meta' : 'Control';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
