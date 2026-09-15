@@ -1,3 +1,6 @@
 .DS_Store
 *.zip
 dist
+.claude/worktrees/
+.claude/settings.local.json
+.env
