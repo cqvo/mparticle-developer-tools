@@ -89,6 +89,8 @@
     cursor: pointer;
   }
   #toolbar button:hover, #fwd-toolbar button:hover, #id-toolbar button:hover { background: var(--hover); }
+  #toolbar button svg, #fwd-toolbar button svg, #id-toolbar button svg { width: 14px; height: 14px; display: block; }
+  #clear, #refresh, #id-refresh { padding: 2px 5px; }
   #settings-form { padding: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 420px; }
   #settings-form label { display: grid; grid-template-columns: 110px 1fr; align-items: center; }
   #settings-form label:has(input[type=checkbox]) { display: flex; gap: 6px; }
@@ -179,7 +181,7 @@
   </div>
   <section id="events">
     <div id="toolbar">
-      <button id="clear">Clear</button>
+      <button id="clear" title="Clear" aria-label="Clear"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
       <button id="upload">Force Batch Upload</button>
       <label><input id="preserve" type="checkbox"> Preserve log</label>
       <span id="count">0</span>
@@ -188,14 +190,14 @@
   </section>
   <section id="forwarders" hidden>
     <div id="fwd-toolbar">
-      <button id="refresh">Refresh</button>
+      <button id="refresh" title="Refresh" aria-label="Refresh"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
       <span id="fwd-status"></span>
     </div>
     <ul id="fwd-list"></ul>
   </section>
   <section id="identity" hidden>
     <div id="id-toolbar">
-      <button id="id-refresh">Refresh</button>
+      <button id="id-refresh" title="Refresh" aria-label="Refresh"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
       <span id="id-status"></span>
     </div>
     <ul id="id-list"></ul>
