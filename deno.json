@@ -1,0 +1,21 @@
+{
+  "tasks": {
+    "test": "deno test -A",
+    "check": "deno check src test",
+    "lint": "deno lint",
+    "fmt": "deno fmt",
+    "build": "rm -rf dist && deno bundle --platform browser -o dist/panel.js src/panel.ts && deno bundle --platform browser -o dist/devtools.js src/devtools.ts && cp manifest.json panel.html devtools.html dist/"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["esnext", "dom", "dom.iterable", "deno.ns"],
+    "types": ["npm:@types/chrome@^0.1"]
+  },
+  "imports": {
+    "jsdom": "npm:jsdom@^30",
+    "@std/testing": "jsr:@std/testing@^1",
+    "@deno/emit": "jsr:@deno/emit@^0.46"
+  },
+  "fmt": { "singleQuote": true, "lineWidth": 120, "exclude": ["*.html"] },
+  "exclude": ["dist"]
+}
