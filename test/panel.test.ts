@@ -111,6 +111,113 @@ describe('events', () => {
       p.request(entry({ url: 'https://example.com/other', body: 'x' }));
       assert.equal(p.$$('#list li').length, 1);
     });
+
+    it('matches any of several |-separated substrings', () => {
+      const p = loadPanel();
+      p.$<HTMLInputElement>('#filter')!.value = 'a|b';
+      p.request(entry({ url: 'https://x.test/aaa', body: 'x' }));
+      p.request(entry({ url: 'https://x.test/bbb', body: 'x' }));
+      p.request(entry({ url: 'https://x.test/zzz', body: 'x' }));
+      assert.deepEqual(p.$$('#list li .url').map((e) => e.textContent), ['x.test/aaa', 'x.test/bbb']);
+    });
+  });
+
+  describe('identity requests', () => {
+    const ID_TS = 1789440092105;
+    const idTime = new Date(ID_TS).toISOString().slice(11, 19);
+    const identities = {
+      customerid: '408578069',
+      email: 'cvo@gofundme.com',
+      other2: '5612f6c2-7860-4948-9cdf-f638a47fe01e',
+      device_application_stamp: '5612f6c2-7860-4948-9cdf-f638a47fe01e',
+    };
+    const req = (over: Record<string, unknown> = {}) => ({
+      client_sdk: { platform: 'web', sdk_vendor: 'mparticle', sdk_version: '2.26.4' },
+      context: null,
+      environment: 'production',
+      request_id: '515067c2-a5a6-41d9-e2f5-d57b66831da3',
+      request_timestamp_ms: ID_TS,
+      previous_mpid: '2627520916699031218',
+      known_identities: identities,
+      ...over,
+    });
+
+    it('renders a login request with its response', () => {
+      const p = loadPanel();
+      p.request(entry({
+        url: 'https://mp-data.gofundme.com/identity/v1/login',
+        body: req(),
+        responseBody: {
+          context: null,
+          matched_identities: identities,
+          is_ephemeral: false,
+          mpid: '1198623402380994759',
+          is_logged_in: true,
+        },
+      }));
+
+      const rows = p.$$('#list li');
+      assert.equal(rows.length, 1);
+      const li = rows[0];
+      assert.equal(li.querySelector('.time')!.textContent, idTime);
+      assert.equal(li.querySelector('.method')!.textContent, 'POST');
+      assert.equal(li.querySelector('.status')!.textContent, '202');
+      assert.equal(li.querySelector('.url')!.textContent, 'mp-data.gofundme.com/identity/v1/login');
+      assert.equal(li.querySelector('.type')!.textContent, 'identity');
+      assert.equal(li.querySelector('.name')!.textContent, 'login');
+      assert.equal(li.querySelector('.event .attrs-count')!.textContent, '→ 1198623402380994759');
+      assert.equal(li.querySelector('.event .ok')!.textContent, 'logged in');
+      assert.deepEqual(
+        [...li.querySelectorAll('.meta div')].map((d) => d.className),
+        ['time', 'method', 'status ok', 'event', 'url'],
+      );
+
+      assert.deepEqual(labels(li), ['known_identities (4)', 'raw', 'matched_identities (4)', 'response']);
+      assert.deepEqual(
+        [...detail(li, 'known_identities (4)').querySelector('.kv')!.children].map((c) => c.textContent),
+        Object.entries(identities).flat(),
+      );
+    });
+
+    it('marks a logged out identify response', () => {
+      const p = loadPanel();
+      const known = { other2: identities.other2, device_application_stamp: identities.device_application_stamp };
+      p.request(entry({
+        url: 'https://mp-data.gofundme.com/identity/v1/identify',
+        body: req({ known_identities: known }),
+        responseBody: {
+          context: null,
+          matched_identities: known,
+          is_ephemeral: true,
+          mpid: '2627520916699031218',
+          is_logged_in: false,
+        },
+      }));
+
+      const li = p.$('#list li')!;
+      assert.equal(li.querySelector('.name')!.textContent, 'identify');
+      assert.equal(li.querySelector('.event .muted')!.textContent, 'logged out');
+      assert.deepEqual(labels(li), ['known_identities (2)', 'raw', 'matched_identities (2)', 'response']);
+    });
+
+    it('matches the default filter', () => {
+      const p = loadPanel();
+      p.request(entry({ url: 'https://identity.mparticle.com/v1/identify', body: req() }));
+      assert.equal(p.$$('#list li').length, 1);
+    });
+
+    it('shows a non-JSON response verbatim', () => {
+      const p = loadPanel();
+      p.request(entry({
+        url: 'https://mp-data.gofundme.com/identity/v1/login',
+        body: req(),
+        responseBody: 'gateway timeout',
+      }));
+
+      const li = p.$('#list li')!;
+      assert.deepEqual(labels(li), ['known_identities (4)', 'raw', 'response']);
+      assert.equal(detail(li, 'response').querySelector('pre')!.textContent, 'gateway timeout');
+    });
   });
 
   describe('hide /Forwarding', () => {
