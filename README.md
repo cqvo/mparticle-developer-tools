@@ -4,6 +4,13 @@ Chrome DevTools extension that lists the network requests a page sends to mParti
 
 ## Quickstart
 
+### Installing from a release
+
+1. Download `mparticle-developer-tools.zip` from the latest
+   [release](https://github.com/cqvo/mparticle-developer-tools/releases) (nightly prereleases, built from `main`).
+2. Unzip it.
+3. In Chrome, go to [chrome://extensions](chrome://extensions) → Developer mode → Load unpacked → the unzipped folder.
+
 ### Installing from source
 
 1. Install [Deno](https://github.com/denoland/deno_install) first if you don't have it
