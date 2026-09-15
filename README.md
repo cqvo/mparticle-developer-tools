@@ -2,7 +2,14 @@
 
 Chrome DevTools extension that lists the network requests a page sends to mParticle's events API.
 
-Load: `deno task build`, then chrome://extensions → Developer mode → Load unpacked → the `dist/` folder.
+## Quickstart
+
+```sh
+deno upgrade --version 2.9.6   # the version CI and dev use; install Deno first from https://deno.com if you don't have it
+deno task build
+```
+
+Then chrome://extensions → Developer mode → Load unpacked → the `dist/` folder.
 
 Test: `deno task test`. The other checks are `deno task check` (typecheck), `deno lint`, and `deno fmt`.
 
