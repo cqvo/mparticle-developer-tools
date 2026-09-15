@@ -52,18 +52,30 @@ function line(parent, text, className) {
   return div;
 }
 
+function span(parent, text, className) {
+  const el = document.createElement('span');
+  if (className) el.className = className;
+  el.textContent = text;
+  parent.appendChild(el);
+  return el;
+}
+
 function time(startedDateTime) {
   const d = new Date(startedDateTime);
   const pad = (n) => String(n).padStart(2, '0');
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-function summarize(event) {
-  const parts = [event && event.event_type];
-  if (event && event.data && event.data.event_name) parts.push(event.data.event_name);
+function summaryEl(li, event) {
+  const div = document.createElement('div');
+  div.className = 'event';
+  span(div, (event && event.event_type) || '', 'type');
+  const name = event && event.data && event.data.event_name;
+  if (name) span(div, name, 'name');
   const attrs = event && event.data && event.data.custom_attributes;
-  if (attrs) parts.push(`(${Object.keys(attrs).length} attrs)`);
-  return parts.join(' ');
+  if (attrs) span(div, `(${Object.keys(attrs).length} attrs)`, 'attrs-count');
+  li.appendChild(div);
+  return div;
 }
 
 function expand(li, label) {
@@ -86,10 +98,14 @@ function pairs(li, label, obj) {
   const keys = Object.keys(obj);
   if (!keys.length) return;
   const details = expand(li, `${label} (${keys.length})`);
+  const kv = document.createElement('div');
+  kv.className = 'kv';
   for (const k of keys) {
     const v = obj[k];
-    line(details, `${k}: ${v !== null && typeof v === 'object' ? JSON.stringify(v) : v}`, 'param');
+    span(kv, k, 'k');
+    span(kv, v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v), 'v');
   }
+  details.appendChild(kv);
 }
 
 function parseBody(entry) {
@@ -106,9 +122,11 @@ function row(entry, when) {
   const li = document.createElement('li');
   const meta = document.createElement('div');
   meta.className = 'meta';
-  line(meta, time(when));
-  line(meta, entry.request.method);
-  line(meta, String(entry.response.status));
+  line(meta, time(when), 'time');
+  line(meta, entry.request.method, 'method');
+  const status = entry.response.status;
+  const statusEl = line(meta, String(status), 'status');
+  statusEl.classList.add(status < 400 ? 'ok' : 'err');
 
   let where = entry.request.url;
   try {
@@ -117,7 +135,8 @@ function row(entry, when) {
   } catch {
     // keep the raw URL
   }
-  line(meta, where, 'url');
+  const urlEl = line(meta, where, 'url');
+  urlEl.title = entry.request.url;
   li.appendChild(meta);
   list.appendChild(li);
   countEl.textContent = String(++count);
@@ -135,7 +154,7 @@ chrome.devtools.network.onRequestFinished.addListener((entry) => {
     for (const event of body.events) {
       const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
       const li = row(entry, when);
-      line(li, summarize(event), 'event');
+      summaryEl(li, event);
       pairs(li, 'custom_attributes', event.data && event.data.custom_attributes);
       pairs(li, 'custom_flags', event.data && event.data.custom_flags);
       raw(li, event);
@@ -191,9 +210,9 @@ function loadForwarders() {
       const li = document.createElement('li');
       const meta = document.createElement('div');
       meta.className = 'meta';
-      line(meta, f.name);
+      line(meta, f.name, 'name');
       line(meta, `id: ${f.id}`);
-      line(meta, f.initialized ? 'initialized' : 'not initialized');
+      line(meta, f.initialized ? 'initialized' : 'not initialized', f.initialized ? 'ok' : 'err');
       li.appendChild(meta);
 
       const details = document.createElement('details');
@@ -245,9 +264,9 @@ function loadIdentity() {
     const head = document.createElement('li');
     const meta = document.createElement('div');
     meta.className = 'meta';
-    line(meta, `MPID: ${result.mpid}`);
+    line(meta, `MPID: ${result.mpid}`, 'name');
     line(meta, `device: ${result.deviceId}`);
-    line(meta, result.isLoggedIn ? 'logged in' : 'logged out');
+    line(meta, result.isLoggedIn ? 'logged in' : 'logged out', result.isLoggedIn ? 'ok' : 'muted');
     head.appendChild(meta);
     idList.appendChild(head);
 
