@@ -4,7 +4,7 @@
     "check": "deno check src test",
     "lint": "deno lint",
     "fmt": "deno fmt",
-    "build": "rm -rf dist && deno bundle --platform browser -o dist/panel.js src/panel.ts && deno bundle --platform browser -o dist/devtools.js src/devtools.ts && cp manifest.json panel.html devtools.html dist/"
+    "build": "deno bundle --platform browser --outdir dist src/panel.ts src/devtools.ts && cp manifest.json panel.html devtools.html dist/"
   },
   "compilerOptions": {
     "strict": true,
