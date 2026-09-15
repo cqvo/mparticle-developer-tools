@@ -1,0 +1,14 @@
+name: e2e
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * *'
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - run: xvfb-run -a deno task e2e

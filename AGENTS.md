@@ -11,11 +11,12 @@ Deno 2.9.6 (pinned in CI). All tasks are in `deno.json`.
 ```sh
 deno task test                    # all tests (jsdom, -A)
 deno test -A --filter "events"    # one describe block; --filter matches top-level describe names only, not `it` titles
-deno task check                   # deno check src test
+deno task check                   # deno check src test e2e
 deno task lint
 deno task fmt                     # single quotes, width 120, HTML excluded
 deno fmt --check                  # what CI runs
 deno task build                   # bundles src/panel.ts + src/devtools.ts to dist/ and copies html/manifest
+deno task e2e                     # builds dist/, launches system Chrome headful, visits live sites
 ```
 
 CI (`test.yml`) runs, in order: `deno fmt --check`, `deno lint`, `deno task check`, `deno task test`, `deno task build`.
@@ -57,6 +58,9 @@ navigation and on instance change. Add a new introspection tab by adding a `<sec
 fake `window.mParticle`, and results are round-tripped through JSON like Chrome does, so probes are exercised for real,
 not mocked. Use `loadPanel`, `entry` (HAR-ish request), `fakeMp`, and `fakeUser` from the harness; assert against DOM
 selectors. `TZ=UTC` is forced in the harness because `time()` formats in local time.
+
+`e2e/` holds the opt-in end-to-end test: it needs system Chrome and network access to live mParticle sites, so
+`deno task test` does not run it and neither does PR CI (`e2e.yml` is manual dispatch plus a nightly schedule).
 
 ## Release
 
