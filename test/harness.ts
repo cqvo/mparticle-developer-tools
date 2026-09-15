@@ -66,7 +66,7 @@ export function loadPanel({ mParticle }: { mParticle?: any } = {}) {
 
 // HAR-ish entry as chrome.devtools.network.onRequestFinished delivers it
 export function entry({
-  url = 'https://jssdks.mparticle.com/v3/JS/key/webevents/events',
+  url = 'https://jssdks.mparticle.com/v3/JS/key/events',
   method = 'POST',
   status = 202,
   body,

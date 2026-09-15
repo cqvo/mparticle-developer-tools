@@ -48,9 +48,10 @@ Identity tab: MPID, device id, login state, identities, user attributes and cons
 `mParticle.Identity.getCurrentUser()`. Refreshes like the Forwarders tab.
 
 The URL filter on the Settings tab matches anywhere in the request URL, and `|` separates alternatives: a request is
-kept if its URL contains any of the `|`-separated substrings. It defaults to `/webevents/|identity`, covering the events
-API path on both the default host (`www.mparticle.com`) and custom CNAME hosts configured via
-`v1/v2/v3SecureServiceUrl`, plus the identity API. Change it if you need to catch something else.
+kept if its URL contains any of the `|`-separated substrings. It defaults to `/events|identity`: `/events` matches the
+SDK's upload path (`.../v3/JS/<key>/events` on the default host `jssdks.mparticle.com`, and the same path on CNAME hosts
+configured via the `v2SecureServiceUrl`/`v3SecureServiceUrl` options), and `identity` matches the identity API. Change
+it if you need to catch something else.
 
 ## Development
 
