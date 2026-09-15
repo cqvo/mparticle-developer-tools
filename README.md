@@ -5,6 +5,7 @@
 [![stable](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?sort=semver&filter=!*-*&label=stable)](https://github.com/cqvo/mparticle-developer-tools/releases/latest)
 [![beta](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?include_prereleases&sort=semver&filter=*-beta.*&label=beta)](https://github.com/cqvo/mparticle-developer-tools/releases?q=beta)
 [![deno](https://img.shields.io/badge/deno-2.9.6-blue?logo=deno)](https://deno.land)
+[![license](https://img.shields.io/github/license/cqvo/mparticle-developer-tools)](LICENSE)
 
 Chrome DevTools extension that lists the network requests a page sends to mParticle's events API.
 
