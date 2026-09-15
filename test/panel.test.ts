@@ -330,6 +330,8 @@ describe('forwarders', () => {
     );
     assert.ok(ga.querySelector('.meta div:last-child')!.classList.contains('ok'));
     assert.equal(ga.querySelector('pre')!.textContent, JSON.stringify(kits[0], null, 2));
+    assert.equal(ga.querySelector('details summary')!.textContent, 'settings (1)');
+    assert.deepEqual([...ga.querySelectorAll('.kv .k')].map((e) => e.textContent), ['apiKey']);
 
     assert.equal(braze.querySelector('.meta div:last-child')!.textContent, 'not initialized');
     assert.ok(braze.querySelector('.meta div:last-child')!.classList.contains('err'));
