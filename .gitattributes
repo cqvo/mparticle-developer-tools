@@ -2,6 +2,7 @@ README.md export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
 test export-ignore
+e2e export-ignore
 package.json export-ignore
 package-lock.json export-ignore
 .github export-ignore

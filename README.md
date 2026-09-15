@@ -51,3 +51,10 @@ The URL filter on the Settings tab matches anywhere in the request URL, and `|` 
 kept if its URL contains any of the `|`-separated substrings. It defaults to `/webevents/|identity`, covering the events
 API path on both the default host (`www.mparticle.com`) and custom CNAME hosts configured via
 `v1/v2/v3SecureServiceUrl`, plus the identity API. Change it if you need to catch something else.
+
+## Development
+
+`deno task test` runs the unit tests in jsdom. `deno task e2e` builds `dist/`, launches your installed Chrome with the
+extension loaded, opens DevTools on www.mparticle.com and www.google.com, and checks that the panel lists mParticle
+requests on the first and nothing on the second. It opens a visible Chrome window and needs network access; CI runs it
+nightly rather than on every pull request.
