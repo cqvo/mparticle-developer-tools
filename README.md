@@ -1,5 +1,10 @@
 # mParticle Developer Tools
 
+[![test](https://img.shields.io/github/actions/workflow/status/cqvo/mparticle-developer-tools/test.yml?branch=main&label=test)](https://github.com/cqvo/mparticle-developer-tools/actions/workflows/test.yml)
+[![e2e](https://img.shields.io/github/actions/workflow/status/cqvo/mparticle-developer-tools/e2e.yml?label=e2e)](https://github.com/cqvo/mparticle-developer-tools/actions/workflows/e2e.yml)
+[![release](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?include_prereleases&sort=semver)](https://github.com/cqvo/mparticle-developer-tools/releases)
+[![deno](https://img.shields.io/badge/deno-2.9.6-blue?logo=deno)](https://deno.land)
+
 Chrome DevTools extension that lists the network requests a page sends to mParticle's events API.
 
 ## Quickstart
