@@ -6,9 +6,9 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { transpile } from '@deno/emit';
 
-const ROOT = new URL('../', import.meta.url);
-const PANEL = new URL('../src/panel.ts', import.meta.url);
-const html = readFileSync(new URL('panel.html', ROOT), 'utf8');
+const SRC = new URL('../src/', import.meta.url);
+const PANEL = new URL('panel.ts', SRC);
+const html = readFileSync(new URL('panel.html', SRC), 'utf8');
 const js = (await transpile(PANEL)).get(PANEL.href)!;
 
 export function loadPanel({ mParticle }: { mParticle?: any } = {}) {
