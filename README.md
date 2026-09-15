@@ -42,15 +42,22 @@ Open Chrome DevTools on any page and go to the "mParticle" tab. The dropdown in 
 `mParticle._instances` entry the Forwarders, Identity, and Force Batch Upload features talk to (`default_instance` by
 default).
 
-Events tab: each event in a batch is listed as its own row as requests finish, with `custom_attributes` and
-`custom_flags` expanding into a key/value grid and "raw" holding the event JSON. Identity API requests (such as
+Events tab: each event in a batch is listed as its own row as requests finish, headed by its `event_type` followed by
+the screen name for a `screen_view` or the event name for a `custom_event`. Each row then groups its details into two
+sections. Under "Event Data" each object-valued field of the event gets its own expander (`custom_attributes`,
+`custom_flags`, and whatever else the event carries) and the scalar fields are grouped under `event_attributes`. The
+expanders within a section are listed alphabetically with the attributes one last, and `custom_attributes` starts open.
+"Batch Data" does the same for the batch the event arrived in: an expander per object (`consent_state`,
+`user_attributes`, `user_identities`, `device_info`, ...) and the rest under `batch_attributes`. Both sections collapse,
+with "Batch Data" collapsed to start. Last comes "raw", which holds the event JSON. Identity API requests (such as
 `/v1/identify`, `/v1/login` and `/v1/logout` on `identity.mparticle.com` or a CNAME host) get one row each, showing the
 request's `known_identities` and the response's `matched_identities` along with the resulting MPID and login state;
 these are recognized by the `known_identities` in the request body rather than by the URL, so the filter only has to let
 the request through. Anything else that passes the filter gets one row per request showing its query string, or its raw
-body if it has one. The upload button (cloud icon, "Force Batch Upload" on hover) calls `mParticle.upload()` on the page
-to flush the queued batch. "Hide /Forwarding" on the Settings tab (on by default) drops the kit-forwarding status posts,
-which carry no events. "Preserve log" keeps the list across page navigations.
+body if it has one. The collapse button (chevrons icon, "Collapse All" on hover) closes every expander in the list, and
+the upload button (cloud icon, "Force Batch Upload" on hover) calls `mParticle.upload()` on the page to flush the queued
+batch. "Hide /Forwarding" on the Settings tab (on by default) drops the kit-forwarding status posts, which carry no
+events. "Preserve log" keeps the list across page navigations.
 
 Forwarders tab: lists the kits returned by `mParticle._getActiveForwarders()` with their id and whether they have
 initialized; "settings (N)" expands into a key/value grid of the kit's settings when it reports any, and "raw" holds the

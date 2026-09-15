@@ -90,9 +90,9 @@
   }
   #toolbar button:hover, #fwd-toolbar button:hover, #id-toolbar button:hover { background: var(--hover); }
   #toolbar button svg, #fwd-toolbar button svg, #id-toolbar button svg { width: 14px; height: 14px; display: block; }
-  #clear, #upload, #refresh, #id-refresh { padding: 2px 5px; }
-  #clear, #upload, #refresh, #id-refresh { position: relative; }
-  #clear::after, #upload::after, #refresh::after, #id-refresh::after {
+  #clear, #collapse, #upload, #refresh, #id-refresh { padding: 2px 5px; }
+  #clear, #collapse, #upload, #refresh, #id-refresh { position: relative; }
+  #clear::after, #collapse::after, #upload::after, #refresh::after, #id-refresh::after {
     content: attr(aria-label);
     position: absolute;
     top: calc(100% + 4px);
@@ -108,7 +108,7 @@
     transition: opacity .1s .2s;
     z-index: 1;
   }
-  #clear:hover::after, #upload:hover::after, #refresh:hover::after, #id-refresh:hover::after { opacity: 1; }
+  #clear:hover::after, #collapse:hover::after, #upload:hover::after, #refresh:hover::after, #id-refresh:hover::after { opacity: 1; }
   #settings-form { padding: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; max-width: 420px; }
   #settings-form label { display: grid; grid-template-columns: 110px 1fr; align-items: center; }
   #settings-form label:has(input[type=checkbox]) { display: flex; gap: 6px; }
@@ -185,6 +185,9 @@
   .param { color: var(--muted); }
   details { margin-top: 4px; }
   #list details { margin: 2px 0 0 66px; }
+  #list details.section > summary { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  #list details.section { margin-top: 6px; }
+  #list details.section > details { margin-left: 14px; }
   #fwd-list details, #id-list details { margin: 4px 0 0 0; }
   summary { cursor: pointer; font-size: 11px; color: var(--muted); user-select: none; }
   summary:hover { color: var(--fg); }
@@ -200,6 +203,7 @@
   <section id="events">
     <div id="toolbar">
       <button id="clear" aria-label="Clear"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+      <button id="collapse" aria-label="Collapse All"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h8"/><path d="M3 12h8"/><path d="M3 19h8"/><path d="m15 5 3 3 3-3"/><path d="m15 19 3-3 3 3"/></svg></button>
       <button id="upload" aria-label="Force Batch Upload"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg></button>
       <label><input id="preserve" type="checkbox"> Preserve log</label>
       <span id="count">0</span>

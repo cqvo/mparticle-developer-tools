@@ -4,9 +4,11 @@ interface MpEvent {
   event_type?: string;
   data?: {
     event_name?: string;
+    screen_name?: string;
     timestamp_unixtime_ms?: number;
     custom_attributes?: Record<string, unknown>;
     custom_flags?: Record<string, unknown>;
+    [k: string]: unknown;
   };
 }
 
@@ -64,6 +66,9 @@ function clear() {
 }
 
 document.getElementById('clear')!.addEventListener('click', clear);
+document.getElementById('collapse')!.addEventListener('click', () => {
+  for (const d of document.querySelectorAll<HTMLDetailsElement>('#list details')) d.open = false;
+});
 chrome.devtools.network.onNavigated.addListener(() => {
   if (!(document.getElementById('preserve') as HTMLInputElement).checked) clear();
   reloadVisible();
@@ -97,14 +102,22 @@ function time(startedDateTime: string | number) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+// The per-type key that names an event in its header; commerce events are one more entry.
+// 'identity' is not an SDK event type - it is the synthetic row built for identity API requests.
+const NAME_KEY: Record<string, string> = {
+  screen_view: 'screen_name',
+  custom_event: 'event_name',
+  identity: 'event_name',
+};
+
 function summaryEl(li: HTMLElement, event: MpEvent) {
   const div = document.createElement('div');
   div.className = 'event';
-  span(div, (event && event.event_type) || '', 'type');
-  const name = event && event.data && event.data.event_name;
-  if (name) span(div, name, 'name');
-  const attrs = event && event.data && event.data.custom_attributes;
-  if (attrs) span(div, `(${Object.keys(attrs).length} attrs)`, 'attrs-count');
+  const type = (event && event.event_type) || '';
+  span(div, type, 'type');
+  const key = NAME_KEY[type];
+  const name = key && event.data && event.data[key];
+  if (name) span(div, String(name), 'name');
   li.appendChild(div);
   return div;
 }
@@ -124,20 +137,49 @@ function raw(li: HTMLElement, value: unknown, label = 'raw') {
   expand(li, label).appendChild(pre);
 }
 
-function pairs(li: HTMLElement, label: string, obj: unknown) {
+function kvGrid(record: Record<string, unknown>) {
+  const kv = document.createElement('div');
+  kv.className = 'kv';
+  for (const [k, v] of Object.entries(record)) {
+    span(kv, k, 'k');
+    span(kv, v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v), 'v');
+  }
+  return kv;
+}
+
+function pairs(li: HTMLElement, label: string, obj: unknown, open = false) {
   if (!obj || typeof obj !== 'object') return;
   const record = obj as Record<string, unknown>;
   const keys = Object.keys(record);
   if (!keys.length) return;
   const details = expand(li, `${label} (${keys.length})`);
-  const kv = document.createElement('div');
-  kv.className = 'kv';
-  for (const k of keys) {
-    const v = record[k];
-    span(kv, k, 'k');
-    span(kv, v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v), 'v');
+  details.open = open;
+  details.appendChild(kvGrid(record));
+}
+
+// Every object-valued key gets its own expand, listed alphabetically; the scalars are collected into one `restLabel`
+// expand that stays last. The scalars keep their payload order.
+function section(li: HTMLElement, title: string, record: Record<string, unknown>, restLabel: string, open: boolean) {
+  const entries = Object.entries(record);
+  if (!entries.length) return;
+  const details = expand(li, title);
+  details.className = 'section';
+  details.open = open;
+  const objects: [string, unknown][] = [];
+  const rest: Record<string, unknown> = {};
+  for (const [k, v] of entries) {
+    if (v !== null && typeof v === 'object') objects.push([k, v]);
+    else rest[k] = v;
   }
-  details.appendChild(kv);
+  for (const [k, v] of objects.sort(([a], [b]) => a.localeCompare(b))) {
+    pairs(details, k, v, k === 'custom_attributes');
+  }
+  pairs(details, restLabel, rest);
+}
+
+function eventDetails(li: HTMLElement, event: MpEvent, batch: Record<string, unknown>) {
+  section(li, 'Event Data', (event.data || {}) as Record<string, unknown>, 'event_attributes', true);
+  section(li, 'Batch Data', batch, 'batch_attributes', false);
 }
 
 function parseJson(text: string): unknown {
@@ -193,12 +235,12 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
   const body = parseBody(entry);
 
   if (typeof body === 'object' && body !== null && Array.isArray((body as { events?: unknown }).events)) {
-    for (const event of (body as { events: MpEvent[] }).events) {
+    const { events, ...batch } = body as { events: MpEvent[] } & Record<string, unknown>;
+    for (const event of events) {
       const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
       const { li, meta } = row(entry, when, true);
       summaryEl(meta, event);
-      pairs(li, 'custom_attributes', event.data && event.data.custom_attributes);
-      pairs(li, 'custom_flags', event.data && event.data.custom_flags);
+      eventDetails(li, event, batch);
       raw(li, event);
     }
     return;
