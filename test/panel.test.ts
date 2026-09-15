@@ -40,21 +40,23 @@ describe('events', () => {
     assert.deepEqual(sections(li), ['Event Data']);
   });
 
-  it('shows screen_name for screen_view and event_name for custom_event, nothing for others', () => {
+  it('shows the per-type name for screen_view, custom_event and commerce_event, nothing for others', () => {
     const p = loadPanel();
     p.request(entry({
       body: {
         events: [
           ev(),
           { event_type: 'screen_view', data: { screen_name: 'Home', timestamp_unixtime_ms: TS } },
+          { event_type: 'commerce_event', data: { product_action: { action: 'checkout' }, timestamp_unixtime_ms: TS } },
           { event_type: 'session_start', data: { timestamp_unixtime_ms: TS } },
         ],
       },
     }));
 
-    const [custom, screen, session] = p.$$('#list li');
+    const [custom, screen, commerce, session] = p.$$('#list li');
     assert.equal(custom.querySelector('.name')!.textContent, 'Checkout');
     assert.equal(screen.querySelector('.name')!.textContent, 'Home');
+    assert.equal(commerce.querySelector('.name')!.textContent, 'checkout');
     assert.equal(session.querySelector('.name'), null);
   });
 
