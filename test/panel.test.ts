@@ -6,6 +6,7 @@ type Panel = ReturnType<typeof loadPanel>;
 
 const TS = Date.UTC(2026, 0, 2, 3, 4, 5); // 03:04:05 UTC
 const labels = (el: Element) => [...el.querySelectorAll('summary')].map((s) => s.textContent);
+const subheads = (el: Element) => [...el.querySelectorAll('.subhead')].map((s) => s.textContent);
 const detail = (el: Element, label: string) =>
   [...el.querySelectorAll('details')].find((d) => d.querySelector('summary')!.textContent === label)!;
 const ev = (over: Record<string, unknown> = {}) => ({
@@ -31,14 +32,26 @@ describe('events', () => {
     assert.equal(li.querySelector('.type')!.textContent, 'custom_event');
     assert.equal(li.querySelector('.name')!.textContent, 'Checkout');
     assert.equal(rows[1].querySelector('.name')!.textContent, 'Purchase');
+    assert.deepEqual(labels(li), ['event_attributes (2)', 'raw']);
+    assert.deepEqual(subheads(li), ['Event Data']);
   });
 
-  it('shows an attribute count only when custom_attributes is present', () => {
+  it('shows screen_name for screen_view and event_name for custom_event, nothing for others', () => {
     const p = loadPanel();
-    p.request(entry({ body: { events: [ev({ custom_attributes: { a: 1, b: 2 } }), ev()] } }));
-    const [withAttrs, without] = p.$$('#list li');
-    assert.equal(withAttrs.querySelector('.attrs-count')!.textContent, '(2 attrs)');
-    assert.equal(without.querySelector('.attrs-count'), null);
+    p.request(entry({
+      body: {
+        events: [
+          ev(),
+          { event_type: 'screen_view', data: { screen_name: 'Home', timestamp_unixtime_ms: TS } },
+          { event_type: 'session_start', data: { timestamp_unixtime_ms: TS } },
+        ],
+      },
+    }));
+
+    const [custom, screen, session] = p.$$('#list li');
+    assert.equal(custom.querySelector('.name')!.textContent, 'Checkout');
+    assert.equal(screen.querySelector('.name')!.textContent, 'Home');
+    assert.equal(session.querySelector('.name'), null);
   });
 
   it('expands custom_attributes and custom_flags as key/value pairs', () => {
@@ -53,7 +66,8 @@ describe('events', () => {
     }));
 
     const li = p.$('#list li')!;
-    assert.deepEqual(labels(li), ['custom_attributes (3)', 'custom_flags (1)', 'raw']);
+    assert.deepEqual(labels(li), ['custom_attributes (3)', 'custom_flags (1)', 'event_attributes (2)', 'raw']);
+    assert.deepEqual(subheads(li), ['Event Data']);
 
     const kv = detail(li, 'custom_attributes (3)').querySelector('.kv')!;
     assert.deepEqual(
@@ -69,7 +83,9 @@ describe('events', () => {
   it('omits details for missing or empty objects', () => {
     const p = loadPanel();
     p.request(entry({ body: { events: [ev({ custom_flags: {} })] } }));
-    assert.deepEqual(labels(p.$('#list li')!), ['raw']);
+    const li = p.$('#list li')!;
+    assert.deepEqual(labels(li), ['event_attributes (2)', 'raw']);
+    assert.deepEqual(subheads(li), ['Event Data']);
   });
 
   it('shows the pretty-printed event as raw', () => {
@@ -82,19 +98,55 @@ describe('events', () => {
     );
   });
 
-  it('shows the batch-level fields as batch', () => {
+  it('splits event and batch data into object expands and an attributes expand', () => {
     const p = loadPanel();
-    const consent_state = { gdpr: { parking: { consented: true } } };
-    p.request(entry({ body: { events: [ev(), ev()], mpid: '1', consent_state } }));
+    const batch = {
+      mpid: '1',
+      environment: 'production',
+      consent_state: { gdpr: { parking: { consented: true } } },
+      user_attributes: { plan: 'pro' },
+      device_info: { os: 'mac' },
+    };
+    p.request(entry({
+      body: {
+        events: [
+          ev({
+            custom_attributes: { a: 1 },
+            custom_flags: { 'Google.Page': '/home' },
+            source_message_id: 'm1',
+            location: null,
+          }),
+          { event_type: 'application_state_transition', data: { timestamp_unixtime_ms: TS } },
+        ],
+        ...batch,
+      },
+    }));
 
-    const rows = p.$$('#list li');
-    assert.equal(rows.length, 2);
-    for (const li of rows) {
-      assert.deepEqual(labels(li), ['batch', 'raw']);
-      assert.equal(
-        detail(li, 'batch').querySelector('pre')!.textContent,
-        JSON.stringify({ mpid: '1', consent_state }, null, 2),
-      );
+    const batchLabels = ['consent_state (1)', 'user_attributes (1)', 'device_info (1)', 'batch_attributes (2)'];
+    const [custom, ast] = p.$$('#list li');
+
+    assert.deepEqual(subheads(custom), ['Event Data', 'Batch Data']);
+    assert.deepEqual(labels(custom), [
+      'custom_attributes (1)',
+      'custom_flags (1)',
+      'event_attributes (4)',
+      ...batchLabels,
+      'raw',
+    ]);
+    assert.deepEqual(
+      [...detail(custom, 'event_attributes (4)').querySelectorAll('.kv span')].map((e) => e.textContent),
+      ['event_name', 'Checkout', 'timestamp_unixtime_ms', String(TS), 'source_message_id', 'm1', 'location', 'null'],
+    );
+    assert.deepEqual(
+      [...detail(custom, 'batch_attributes (2)').querySelectorAll('.kv .k')].map((k) => k.textContent),
+      ['mpid', 'environment'],
+    );
+
+    assert.deepEqual(subheads(ast), ['Event Data', 'Batch Data']);
+    assert.deepEqual(labels(ast), ['event_attributes (1)', ...batchLabels, 'raw']);
+
+    for (const row of [custom, ast]) {
+      assert.ok([...row.querySelectorAll('details')].every((d) => d.open === false));
     }
   });
 
@@ -105,6 +157,7 @@ describe('events', () => {
       startedDateTime: '2026-01-02T11:22:33.000Z',
     }));
     assert.equal(p.$('#list li .time')!.textContent, '11:22:33');
+    assert.deepEqual(subheads(p.$('#list li')!), []);
   });
 
   describe('filter', () => {

@@ -4,9 +4,11 @@ interface MpEvent {
   event_type?: string;
   data?: {
     event_name?: string;
+    screen_name?: string;
     timestamp_unixtime_ms?: number;
     custom_attributes?: Record<string, unknown>;
     custom_flags?: Record<string, unknown>;
+    [k: string]: unknown;
   };
 }
 
@@ -97,14 +99,22 @@ function time(startedDateTime: string | number) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+// The per-type key that names an event in its header; commerce events are one more entry.
+// 'identity' is not an SDK event type - it is the synthetic row built for identity API requests.
+const NAME_KEY: Record<string, string> = {
+  screen_view: 'screen_name',
+  custom_event: 'event_name',
+  identity: 'event_name',
+};
+
 function summaryEl(li: HTMLElement, event: MpEvent) {
   const div = document.createElement('div');
   div.className = 'event';
-  span(div, (event && event.event_type) || '', 'type');
-  const name = event && event.data && event.data.event_name;
-  if (name) span(div, name, 'name');
-  const attrs = event && event.data && event.data.custom_attributes;
-  if (attrs) span(div, `(${Object.keys(attrs).length} attrs)`, 'attrs-count');
+  const type = (event && event.event_type) || '';
+  span(div, type, 'type');
+  const key = NAME_KEY[type];
+  const name = key && event.data && event.data[key];
+  if (name) span(div, String(name), 'name');
   li.appendChild(div);
   return div;
 }
@@ -124,20 +134,44 @@ function raw(li: HTMLElement, value: unknown, label = 'raw') {
   expand(li, label).appendChild(pre);
 }
 
+function kvGrid(record: Record<string, unknown>) {
+  const kv = document.createElement('div');
+  kv.className = 'kv';
+  for (const [k, v] of Object.entries(record)) {
+    span(kv, k, 'k');
+    span(kv, v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v), 'v');
+  }
+  return kv;
+}
+
 function pairs(li: HTMLElement, label: string, obj: unknown) {
   if (!obj || typeof obj !== 'object') return;
   const record = obj as Record<string, unknown>;
   const keys = Object.keys(record);
   if (!keys.length) return;
-  const details = expand(li, `${label} (${keys.length})`);
-  const kv = document.createElement('div');
-  kv.className = 'kv';
-  for (const k of keys) {
-    const v = record[k];
-    span(kv, k, 'k');
-    span(kv, v !== null && typeof v === 'object' ? JSON.stringify(v) : String(v), 'v');
+  expand(li, `${label} (${keys.length})`).appendChild(kvGrid(record));
+}
+
+function subhead(li: HTMLElement, text: string) {
+  line(li, text, 'subhead');
+}
+
+// Every object-valued key gets its own expand; the scalars are collected into one `restLabel` expand.
+function section(li: HTMLElement, title: string, record: Record<string, unknown>, restLabel: string) {
+  const entries = Object.entries(record);
+  if (!entries.length) return;
+  subhead(li, title);
+  const rest: Record<string, unknown> = {};
+  for (const [k, v] of entries) {
+    if (v !== null && typeof v === 'object') pairs(li, k, v);
+    else rest[k] = v;
   }
-  details.appendChild(kv);
+  pairs(li, restLabel, rest);
+}
+
+function eventDetails(li: HTMLElement, event: MpEvent, batch: Record<string, unknown>) {
+  section(li, 'Event Data', (event.data || {}) as Record<string, unknown>, 'event_attributes');
+  section(li, 'Batch Data', batch, 'batch_attributes');
 }
 
 function parseJson(text: string): unknown {
@@ -198,9 +232,7 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
       const when = (event.data && event.data.timestamp_unixtime_ms) || entry.startedDateTime;
       const { li, meta } = row(entry, when, true);
       summaryEl(meta, event);
-      pairs(li, 'custom_attributes', event.data && event.data.custom_attributes);
-      pairs(li, 'custom_flags', event.data && event.data.custom_flags);
-      if (Object.keys(batch).length) raw(li, batch, 'batch');
+      eventDetails(li, event, batch);
       raw(li, event);
     }
     return;
