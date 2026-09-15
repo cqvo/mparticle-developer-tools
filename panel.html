@@ -45,6 +45,7 @@
     padding: 0 2px;
   }
   #tabs button.active { font-weight: bold; text-decoration: underline; }
+  #instance { margin-left: auto; }
   #toolbar, #fwd-toolbar, #id-toolbar {
     display: flex;
     gap: 8px;
@@ -84,6 +85,7 @@
     <button data-tab="events" class="active">Events</button>
     <button data-tab="forwarders">Forwarders</button>
     <button data-tab="identity">Identity</button>
+    <select id="instance"><option>default_instance</option></select>
   </div>
   <section id="events">
     <div id="toolbar">

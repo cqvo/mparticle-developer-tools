@@ -1,6 +1,28 @@
 const list = document.getElementById('list');
 const countEl = document.getElementById('count');
 const filterInput = document.getElementById('filter');
+const instanceSelect = document.getElementById('instance');
+
+function instanceExpr() {
+  const name = instanceSelect.value || 'default_instance';
+  return `((window.mParticle && window.mParticle._instances) || {})[${JSON.stringify(name)}]${name === 'default_instance' ? ' || window.mParticle' : ''}`;
+}
+
+function evalWithInstance(body, cb) {
+  chrome.devtools.inspectedWindow.eval(`((mp) => {${body}})(${instanceExpr()})`, cb);
+}
+
+function loadInstances() {
+  chrome.devtools.inspectedWindow.eval('Object.keys((window.mParticle && window.mParticle._instances) || {})', (names, err) => {
+    if (err || !Array.isArray(names)) return;
+    const wanted = ['default_instance', ...names.filter((n) => n !== 'default_instance')];
+    const current = [...instanceSelect.options].map((o) => o.value);
+    if (current.length === wanted.length && current.every((n, i) => n === wanted[i])) return;
+    const selected = instanceSelect.value;
+    instanceSelect.replaceChildren(...wanted.map((name) => new Option(name)));
+    instanceSelect.value = wanted.includes(selected) ? selected : 'default_instance';
+  });
+}
 
 let count = 0;
 
@@ -13,10 +35,14 @@ function clear() {
 document.getElementById('clear').addEventListener('click', clear);
 chrome.devtools.network.onNavigated.addListener(() => {
   if (!document.getElementById('preserve').checked) clear();
+  reloadVisible();
+});
+
+function reloadVisible() {
   for (const [tab, load] of Object.entries(loaders)) {
     if (!document.getElementById(tab).hidden) load();
   }
-});
+}
 
 function line(parent, text, className) {
   const div = document.createElement('div');
@@ -128,9 +154,8 @@ chrome.devtools.network.onRequestFinished.addListener((entry) => {
 const fwdList = document.getElementById('fwd-list');
 const fwdStatus = document.getElementById('fwd-status');
 
-const FORWARDERS_EXPR = `(() => {
-  const mp = window.mParticle;
-  if (!mp || typeof mp._getActiveForwarders !== 'function') return { error: 'mParticle not found on page' };
+const FORWARDERS_EXPR = `
+  if (!mp || typeof mp._getActiveForwarders !== 'function') return { error: 'instance not found on page' };
   try {
     return mp._getActiveForwarders().map(f => {
       try {
@@ -145,10 +170,11 @@ const FORWARDERS_EXPR = `(() => {
   } catch (e) {
     return { error: String(e) };
   }
-})()`;
+`;
 
 function loadForwarders() {
-  chrome.devtools.inspectedWindow.eval(FORWARDERS_EXPR, (result, err) => {
+  loadInstances();
+  evalWithInstance(FORWARDERS_EXPR, (result, err) => {
     fwdList.replaceChildren();
 
     if (err) {
@@ -186,9 +212,8 @@ function loadForwarders() {
 const idList = document.getElementById('id-list');
 const idStatus = document.getElementById('id-status');
 
-const IDENTITY_EXPR = `(() => {
-  const mp = window.mParticle;
-  if (!mp || !mp.Identity || typeof mp.Identity.getCurrentUser !== 'function') return { error: 'mParticle not found on page' };
+const IDENTITY_EXPR = `
+  if (!mp || !mp.Identity || typeof mp.Identity.getCurrentUser !== 'function') return { error: 'instance not found on page' };
   const u = mp.Identity.getCurrentUser();
   if (!u) return { error: 'no current user' };
   const get = (fn) => { try { return fn(); } catch (e) { return String(e); } };
@@ -200,10 +225,11 @@ const IDENTITY_EXPR = `(() => {
     attributes: get(() => u.getAllUserAttributes()),
     consent: get(() => JSON.parse(JSON.stringify(u.getConsentState() || null)))
   };
-})()`;
+`;
 
 function loadIdentity() {
-  chrome.devtools.inspectedWindow.eval(IDENTITY_EXPR, (result, err) => {
+  loadInstances();
+  evalWithInstance(IDENTITY_EXPR, (result, err) => {
     idList.replaceChildren();
 
     if (err) {
@@ -239,6 +265,7 @@ function loadIdentity() {
 
 const loaders = { forwarders: loadForwarders, identity: loadIdentity };
 
+instanceSelect.addEventListener('change', reloadVisible);
 document.getElementById('refresh').addEventListener('click', loadForwarders);
 document.getElementById('id-refresh').addEventListener('click', loadIdentity);
 
@@ -253,10 +280,12 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 });
 
 document.getElementById('upload').addEventListener('click', () => {
-  chrome.devtools.inspectedWindow.eval(
-    'window.mParticle && typeof window.mParticle.upload === "function" ? (window.mParticle.upload(), "ok") : "mParticle not found on page"',
+  evalWithInstance(
+    `if (!mp || typeof mp.upload !== 'function') return 'instance not found on page'; mp.upload(); return 'ok';`,
     (result, err) => {
       if (err || result !== 'ok') console.warn('mParticle upload:', err || result);
     }
   );
 });
+
+loadInstances();

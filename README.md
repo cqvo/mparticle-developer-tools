@@ -4,7 +4,9 @@ Chrome DevTools extension that lists the network requests a page sends to mParti
 
 Load: chrome://extensions → Developer mode → Load unpacked → this folder. No build step.
 
-Use: open Chrome DevTools on any page and go to the "mParticle" tab.
+Use: open Chrome DevTools on any page and go to the "mParticle" tab. The dropdown in the tab bar picks
+which `mParticle._instances` entry the Forwarders, Identity, and Upload features talk to
+(`default_instance` by default).
 
 Events tab: each event in a batch is listed as its own row as requests finish
 (expand "raw" for the event JSON). "Upload" calls `mParticle.upload()` on the page to flush the
