@@ -10,7 +10,7 @@ const SITES = [
 ];
 const DIST = new URL('../dist/', import.meta.url).pathname;
 // mirrors URL_FILTER in src/panel.ts
-const FILTER = /\/v[1-3]\/(identify|login|logout|.+\/modify|.+\/config|.+\/Forwarding|.+\/events)/i;
+const FILTER = /\/v[1-3]\/(identify|login|logout|.+\/modify|.+\/config|.+\/Forwarding|JS\/[^/]+\/events)/i;
 const NEXT_PANEL = Deno.build.os === 'darwin' ? 'Meta' : 'Control';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));

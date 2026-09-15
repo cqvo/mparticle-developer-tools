@@ -209,6 +209,12 @@ describe('events', () => {
       p.request(entry({ url: 'https://example.com/events', body: 'x' }));
       assert.equal(p.$$('#list li').length, 0);
     });
+
+    it('ignores an events path without a JS key segment', () => {
+      const p = loadPanel();
+      p.request(entry({ url: 'https://example.com/v2/other/events', body: 'x' }));
+      assert.equal(p.$$('#list li').length, 0);
+    });
   });
 
   describe('identity requests', () => {
