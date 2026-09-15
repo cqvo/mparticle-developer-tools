@@ -217,16 +217,10 @@ function loadForwarders() {
       line(meta, f.name, 'name');
       line(meta, `id: ${f.id}`);
       line(meta, f.initialized ? 'initialized' : 'not initialized', f.initialized ? 'ok' : 'err');
+      if (f.error) line(meta, f.error, 'err');
       li.appendChild(meta);
-
-      const details = document.createElement('details');
-      const summary = document.createElement('summary');
-      summary.textContent = 'raw';
-      const pre = document.createElement('pre');
-      pre.textContent = JSON.stringify(f, null, 2);
-      details.append(summary, pre);
-      li.appendChild(details);
-
+      pairs(li, 'settings', f.settings);
+      raw(li, f);
       fwdList.appendChild(li);
     }
   });
