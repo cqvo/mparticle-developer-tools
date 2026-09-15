@@ -66,6 +66,9 @@ function clear() {
 }
 
 document.getElementById('clear')!.addEventListener('click', clear);
+document.getElementById('collapse')!.addEventListener('click', () => {
+  for (const d of document.querySelectorAll<HTMLDetailsElement>('#list details')) d.open = false;
+});
 chrome.devtools.network.onNavigated.addListener(() => {
   if (!(document.getElementById('preserve') as HTMLInputElement).checked) clear();
   reloadVisible();
@@ -144,34 +147,39 @@ function kvGrid(record: Record<string, unknown>) {
   return kv;
 }
 
-function pairs(li: HTMLElement, label: string, obj: unknown) {
+function pairs(li: HTMLElement, label: string, obj: unknown, open = false) {
   if (!obj || typeof obj !== 'object') return;
   const record = obj as Record<string, unknown>;
   const keys = Object.keys(record);
   if (!keys.length) return;
-  expand(li, `${label} (${keys.length})`).appendChild(kvGrid(record));
+  const details = expand(li, `${label} (${keys.length})`);
+  details.open = open;
+  details.appendChild(kvGrid(record));
 }
 
-function subhead(li: HTMLElement, text: string) {
-  line(li, text, 'subhead');
-}
-
-// Every object-valued key gets its own expand; the scalars are collected into one `restLabel` expand.
-function section(li: HTMLElement, title: string, record: Record<string, unknown>, restLabel: string) {
+// Every object-valued key gets its own expand, listed alphabetically; the scalars are collected into one `restLabel`
+// expand that stays last. The scalars keep their payload order.
+function section(li: HTMLElement, title: string, record: Record<string, unknown>, restLabel: string, open: boolean) {
   const entries = Object.entries(record);
   if (!entries.length) return;
-  subhead(li, title);
+  const details = expand(li, title);
+  details.className = 'section';
+  details.open = open;
+  const objects: [string, unknown][] = [];
   const rest: Record<string, unknown> = {};
   for (const [k, v] of entries) {
-    if (v !== null && typeof v === 'object') pairs(li, k, v);
+    if (v !== null && typeof v === 'object') objects.push([k, v]);
     else rest[k] = v;
   }
-  pairs(li, restLabel, rest);
+  for (const [k, v] of objects.sort(([a], [b]) => a.localeCompare(b))) {
+    pairs(details, k, v, k === 'custom_attributes');
+  }
+  pairs(details, restLabel, rest);
 }
 
 function eventDetails(li: HTMLElement, event: MpEvent, batch: Record<string, unknown>) {
-  section(li, 'Event Data', (event.data || {}) as Record<string, unknown>, 'event_attributes');
-  section(li, 'Batch Data', batch, 'batch_attributes');
+  section(li, 'Event Data', (event.data || {}) as Record<string, unknown>, 'event_attributes', true);
+  section(li, 'Batch Data', batch, 'batch_attributes', false);
 }
 
 function parseJson(text: string): unknown {
