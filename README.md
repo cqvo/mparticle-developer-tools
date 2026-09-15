@@ -16,6 +16,7 @@ Chrome DevTools extension that lists the network requests a page sends to mParti
 
 Open Chrome DevTools on any page and go to the "mParticle" tab. The dropdown in the tab bar picks which
 `mParticle._instances` entry the Forwarders, Identity, and Force Batch Upload features talk to (`default_instance` by default).
+
 Events tab: each event in a batch is listed as its own row as requests finish (expand "raw" for the event JSON).
 "Force Batch Upload" calls `mParticle.upload()` on the page to flush the queued batch. "Hide /Forwarding" on the Settings tab (on by
 default) drops the kit-forwarding status posts, which carry no events. "Preserve log" keeps the list across page
