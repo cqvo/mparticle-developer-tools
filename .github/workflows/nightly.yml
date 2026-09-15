@@ -1,0 +1,35 @@
+name: nightly
+on:
+  schedule:
+    - cron: '0 8 * * *' # 08:00 UTC = midnight PT
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Skip if HEAD is already released
+        id: check
+        run: |
+          if [ -n "$(git tag --points-at HEAD)" ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.check.outputs.skip != 'true'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.6
+      - if: steps.check.outputs.skip != 'true'
+        run: deno task build && (cd dist && zip -r ../mparticle-developer-tools.zip .)
+      - if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "nightly-$(date -u +%Y%m%d)" mparticle-developer-tools.zip --prerelease --generate-notes --title "Nightly $(date -u +%Y-%m-%d)"
+      - name: Prune nightlies older than the newest 7
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName --jq '.[].tagName | select(startswith("nightly-"))' \
+            | sort -r | tail -n +8 | xargs -r -n1 gh release delete -y --cleanup-tag
