@@ -49,7 +49,7 @@ Settings tab (on by default) drops the kit-forwarding status posts, which carry 
 across page navigations.
 
 Forwarders tab: lists the kits returned by `mParticle._getActiveForwarders()` with their id and whether they have
-initialized; expand "raw" for the kit settings. Refreshes on tab switch, page navigation, and the "Refresh" button.
+initialized; expand "raw" for the kit settings. Refreshes on tab switch, page navigation, and the refresh button.
 
 Identity tab: MPID, device id, login state, identities, user attributes and consent state for the current user from
 `mParticle.Identity.getCurrentUser()`. Refreshes like the Forwarders tab.
