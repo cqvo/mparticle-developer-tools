@@ -19,17 +19,16 @@ jobs:
         id: check
         run: |
           if [ -n "$(git tag --points-at HEAD)" ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; fi
-          v="v$(jq -r .version src/manifest.json)-nightly.$(date -u +%Y%m%d)"
-          echo "tag=$v" >> "$GITHUB_OUTPUT"
+          last=$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          IFS=. read -r maj min pat <<< "${last#v}"
+          v="${maj:-0}.${min:-0}.$(( ${pat:-0} + 1 ))-nightly.$(date -u +%Y%m%d)"
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"; echo "version=$v" >> "$GITHUB_OUTPUT"
       - if: steps.check.outputs.skip != 'true'
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.6
       - if: steps.check.outputs.skip != 'true'
-        run: |
-          deno task build
-          jq --arg v "${{ steps.check.outputs.tag }}" '.version_name=$v' dist/manifest.json > m && mv m dist/manifest.json
-          (cd dist && zip -r ../mparticle-developer-tools.zip .)
+        run: scripts/package.sh "${{ steps.check.outputs.version }}"
       - if: steps.check.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}

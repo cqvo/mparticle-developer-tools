@@ -6,3 +6,5 @@ e2e export-ignore
 package.json export-ignore
 package-lock.json export-ignore
 .github export-ignore
+scripts export-ignore
+.releaserc.json export-ignore

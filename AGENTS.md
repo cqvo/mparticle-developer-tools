@@ -86,7 +86,11 @@ avoids `*.test.ts`) and neither does PR CI; `e2e.yml` runs it on manual dispatch
 
 ## Release
 
-`nightly.yml` builds and publishes a `vX.Y.Z-nightly.YYYYMMDD` prerelease zip from `main` daily (skipped if HEAD is
-already tagged), keeping the newest 7. `release.yml` (manual, `channel` input) tags `main` as `vX.Y.Z` (release) or
-`vX.Y.Z-beta.N` (prerelease) using the version in `src/manifest.json`. `.gitattributes` `export-ignore` controls what is
-excluded from archives.
+`release.yml` (manual `workflow_dispatch` on `main`, optional `dry_run` input) runs `npx semantic-release` with
+`.releaserc.json`: commit-analyzer decides the bump from commits since the last `vX.Y.Z` tag (`feat:` → minor,
+`BREAKING CHANGE:` footer → major, anything else → patch), `@semantic-release/exec` runs `scripts/release-notes.sh`
+(GitHub's auto-generated notes) and `scripts/package.sh` (build, stamp `version`/`version_name` into
+`dist/manifest.json`, zip), and `@semantic-release/github` tags and publishes. `nightly.yml` publishes a
+`vX.Y.Z-nightly.YYYYMMDD` prerelease daily from `main` (skipped if HEAD is already tagged), where `X.Y.Z` is the latest
+stable tag plus one patch, and keeps the newest 7. The `version` in `src/manifest.json` is a `0.0.0` placeholder; only
+`scripts/package.sh` writes the real one. `.gitattributes` `export-ignore` controls what is excluded from archives.
