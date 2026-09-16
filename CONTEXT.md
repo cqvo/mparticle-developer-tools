@@ -15,3 +15,6 @@ its own row.
 
 Identity request — a body carrying `known_identities` posted to the identity API (`/v1/identify`, `/login`, `/logout`);
 renders as one row joined with its response (`matched_identities`, `mpid`, `is_logged_in`).
+
+Request — a network entry captured by the panel; `src/requests.ts` classifies it as a Batch, an Identity request, or
+other, and drops anything whose URL misses the upload/identity filter.

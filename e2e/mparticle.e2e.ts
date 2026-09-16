@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, describe, it } from '@std/testing/bdd';
 import assert from 'node:assert/strict';
 import puppeteer, { type Browser, type Page } from 'puppeteer';
+import { URL_FILTER } from '../src/requests.ts';
 import { entry, loadPanel } from '../test/harness.ts';
 
 const SITES = [
@@ -9,8 +10,6 @@ const SITES = [
   { url: 'https://www.google.com/', mparticle: false }, // control: must show nothing
 ];
 const DIST = new URL('../dist/', import.meta.url).pathname;
-// mirrors URL_FILTER in src/panel.ts
-const FILTER = /\/v[1-3]\/(identify|login|logout|.+\/modify|.+\/config|.+\/Forwarding|JS\/[^/]+\/events)/i;
 const NEXT_PANEL = Deno.build.os === 'darwin' ? 'Meta' : 'Control';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -79,7 +78,7 @@ for (const { url, mparticle } of SITES) {
       });
       [page] = await browser.pages();
       page.on('requestfinished', (r) => {
-        if (!FILTER.test(r.url())) return;
+        if (!URL_FILTER.test(r.url())) return;
         captured.push({ url: r.url(), method: r.method(), status: r.response()!.status(), body: r.postData() });
       });
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 60_000 });
@@ -96,7 +95,7 @@ for (const { url, mparticle } of SITES) {
 
     if (mparticle) {
       it('emits mParticle traffic that the panel code renders', () => {
-        assert.ok(captured.length > 0, `no request matching ${FILTER} on ${url}`);
+        assert.ok(captured.length > 0, `no request matching ${URL_FILTER} on ${url}`);
         assert.ok(captured.some((r) => r.body), `no request body captured on ${url}: ${captured.map((r) => r.url)}`);
 
         const p = loadPanel();
@@ -123,7 +122,7 @@ for (const { url, mparticle } of SITES) {
         assert.equal(
           captured.length,
           0,
-          `unexpected requests matching ${FILTER} on ${url}: ${captured.map((r) => r.url)}`,
+          `unexpected requests matching ${URL_FILTER} on ${url}: ${captured.map((r) => r.url)}`,
         );
       });
 

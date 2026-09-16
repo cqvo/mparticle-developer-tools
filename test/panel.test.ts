@@ -170,55 +170,6 @@ describe('events', () => {
     assert.deepEqual(sections(p.$('#list li')!), []);
   });
 
-  describe('filter', () => {
-    it('ignores URLs that do not match', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://example.com/other' }));
-      assert.equal(p.$$('#list li').length, 0);
-    });
-
-    it('matches case-insensitively', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://x.test/V2/JS/key/Events', body: 'x' }));
-      assert.equal(p.$$('#list li').length, 1);
-    });
-
-    it('matches the default v3 upload URL', () => {
-      const p = loadPanel();
-      p.request(entry({
-        url: 'https://jssdks.mparticle.com/v3/JS/us2-cbf324c983a1464a8cef51328faad173/events',
-        body: { events: [ev()] },
-      }));
-      assert.equal(p.$$('#list li').length, 1);
-    });
-
-    it('matches the identity endpoints', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://identity.mparticle.com/v1/identify', body: 'x' }));
-      p.request(entry({ url: 'https://identity.mparticle.com/v1/login', body: 'x' }));
-      p.request(entry({ url: 'https://identity.mparticle.com/v1/1234/modify', body: 'x' }));
-      assert.equal(p.$$('#list li').length, 3);
-    });
-
-    it('matches the config endpoint', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://jssdkcdns.mparticle.com/JS/v2/key/config', body: 'x' }));
-      assert.equal(p.$$('#list li').length, 1);
-    });
-
-    it('ignores a path with no version segment', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://example.com/events', body: 'x' }));
-      assert.equal(p.$$('#list li').length, 0);
-    });
-
-    it('ignores an events path without a JS key segment', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://example.com/v2/other/events', body: 'x' }));
-      assert.equal(p.$$('#list li').length, 0);
-    });
-  });
-
   describe('identity requests', () => {
     const ID_TS = 1789440092105;
     const idTime = new Date(ID_TS).toISOString().slice(11, 19);
@@ -297,12 +248,6 @@ describe('events', () => {
       assert.deepEqual(labels(li), ['known_identities (2)', 'raw', 'matched_identities (2)', 'response']);
     });
 
-    it('matches the URL filter', () => {
-      const p = loadPanel();
-      p.request(entry({ url: 'https://identity.mparticle.com/v1/identify', body: req() }));
-      assert.equal(p.$$('#list li').length, 1);
-    });
-
     it('shows a non-JSON response verbatim', () => {
       const p = loadPanel();
       p.request(entry({
@@ -317,30 +262,14 @@ describe('events', () => {
     });
   });
 
-  describe('hide /Forwarding', () => {
-    const forwarding = (p: Panel, url: string) => {
-      p.request(entry({ url, body: 'x' }));
-    };
+  it('honours the hide /Forwarding checkbox', () => {
+    const p = loadPanel();
+    p.request(entry({ url: 'https://example.com/v2/JS/key/Forwarding', body: 'x' }));
+    assert.equal(p.$$('#list li').length, 0);
 
-    it('drops /Forwarding and /Forwarding?x=1 while checked', () => {
-      const p = loadPanel();
-      forwarding(p, 'https://example.com/v2/JS/key/Forwarding');
-      forwarding(p, 'https://example.com/v2/JS/key/Forwarding?x=1');
-      assert.equal(p.$$('#list li').length, 0);
-    });
-
-    it('shows them when unchecked', () => {
-      const p = loadPanel();
-      p.$<HTMLInputElement>('#hide-forwarding')!.checked = false;
-      forwarding(p, 'https://example.com/v2/JS/key/Forwarding');
-      assert.equal(p.$$('#list li').length, 1);
-    });
-
-    it('never drops /ForwardingX', () => {
-      const p = loadPanel();
-      forwarding(p, 'https://example.com/v2/JS/key/ForwardingX');
-      assert.equal(p.$$('#list li').length, 1);
-    });
+    p.$<HTMLInputElement>('#hide-forwarding')!.checked = false;
+    p.request(entry({ url: 'https://example.com/v2/JS/key/Forwarding', body: 'x' }));
+    assert.equal(p.$$('#list li').length, 1);
   });
 
   it('lists the query string when there is no post body', () => {
