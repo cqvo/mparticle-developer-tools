@@ -1,0 +1,23 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    ["@semantic-release/commit-analyzer", {
+      "releaseRules": [
+        { "breaking": true, "release": "major" },
+        { "type": "feat", "release": "minor" },
+        { "release": "patch" }
+      ]
+    }],
+    ["@semantic-release/exec", {
+      "generateNotesCmd": "scripts/release-notes.sh ${nextRelease.gitTag} ${nextRelease.gitHead} ${lastRelease.gitTag}",
+      "prepareCmd": "scripts/package.sh ${nextRelease.version}"
+    }],
+    ["@semantic-release/github", {
+      "assets": "mparticle-developer-tools.zip",
+      "successComment": false,
+      "failComment": false,
+      "failTitle": false,
+      "releasedLabels": false
+    }]
+  ]
+}

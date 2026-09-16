@@ -3,7 +3,6 @@
 [![test](https://img.shields.io/github/actions/workflow/status/cqvo/mparticle-developer-tools/test.yml?branch=main&label=test)](https://github.com/cqvo/mparticle-developer-tools/actions/workflows/test.yml)
 [![e2e](https://img.shields.io/github/actions/workflow/status/cqvo/mparticle-developer-tools/e2e.yml?label=e2e)](https://github.com/cqvo/mparticle-developer-tools/actions/workflows/e2e.yml)
 [![stable](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?sort=semver&filter=!*-*&label=stable)](https://github.com/cqvo/mparticle-developer-tools/releases/latest)
-[![beta](https://img.shields.io/github/v/release/cqvo/mparticle-developer-tools?include_prereleases&sort=semver&filter=*-beta.*&label=beta)](https://github.com/cqvo/mparticle-developer-tools/releases?q=beta)
 [![deno](https://img.shields.io/badge/deno-2.9.6-blue?logo=deno)](https://deno.land)
 [![license](https://img.shields.io/github/license/cqvo/mparticle-developer-tools)](LICENSE)
 
@@ -15,8 +14,8 @@ mParticle and lets you inspect the page's `mParticle` SDK instance (forwarders, 
 ### Installing from a release
 
 1. Download `mparticle-developer-tools.zip` from the latest
-   [release](https://github.com/cqvo/mparticle-developer-tools/releases). Production releases are tagged `vX.Y.Z`, betas
-   are `vX.Y.Z-beta.N` prereleases, and `vX.Y.Z-nightly.YYYYMMDD` prereleases are built from `main` daily.
+   [release](https://github.com/cqvo/mparticle-developer-tools/releases). Releases are tagged `vX.Y.Z`, and
+   `vX.Y.Z-nightly.YYYYMMDD` prereleases are built from `main` daily.
 2. Unzip it.
 3. In Chrome, go to [chrome://extensions](chrome://extensions) → Developer mode → Load unpacked → the unzipped folder.
 
@@ -30,11 +29,10 @@ mParticle and lets you inspect the page's `mParticle` SDK instance (forwarders, 
 
 ### Releasing
 
-Bump `version` in `src/manifest.json` on a branch and merge it to `main`.
-
-Then run the `release` workflow from the Actions tab (or `gh workflow run release.yml -f channel=beta`) and pick `beta`
-or `production`. It runs the tests, builds, tags the current `main` commit, and publishes the zip. Betas are numbered
-automatically; production fails if that version is already tagged.
+Run the `release` workflow on `main`, either from the Actions tab or `gh workflow run release.yml` (add
+`-f dry_run=true` to preview without publishing). The version is computed from the commits since the last `vX.Y.Z` tag:
+a `feat:` prefix bumps minor, a `BREAKING CHANGE:` footer bumps major, anything else bumps patch. No file edits are
+needed to release. Local builds (`deno task build`) always ship version `0.0.0`.
 
 ## Using the extension
 
