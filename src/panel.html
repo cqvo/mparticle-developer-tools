@@ -134,7 +134,9 @@
     align-items: baseline;
     font-family: ui-monospace, Menlo, monospace;
   }
-  .time { color: var(--muted); min-width: 56px; }
+  /* pulled out of the .meta flex row into the gutter #list li reserves on the right */
+  #list .time { position: absolute; top: 4px; right: 8px; }
+  .time { color: var(--muted); min-width: 56px; text-align: right; }
   .method { font-weight: 600; min-width: 34px; }
   .status { min-width: 24px; }
   .ok { color: var(--ok); }
@@ -178,6 +180,10 @@
   .param { color: var(--muted); }
   details { margin-top: 4px; }
   #list details { margin: 2px 0 0 66px; }
+  #list li { position: relative; padding-right: 66px; }
+  #list details.row { margin: 0; }
+  #list details.row > summary { color: inherit; font-size: inherit; }
+  #list details.row > summary > .meta { display: inline-flex; }
   #list details.section > summary { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
   #list details.section { margin-top: 6px; }
   #list details.section > details { margin-left: 14px; }

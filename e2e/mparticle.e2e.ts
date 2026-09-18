@@ -105,7 +105,7 @@ for (const { url, mparticle } of SITES) {
 
       it('renders events in the real DevTools panel', async () => {
         const read = await openPanel(browser, page);
-        const countRows = () => read(`document.querySelectorAll('#list li').length`);
+        const countRows = () => read(`document.querySelectorAll('#list li:not(.nav)').length`);
         let rows = await until(30_000, countRows);
         if (!rows) {
           await read(`document.getElementById('upload').click()`); // Force Batch Upload, same fallback as stage 1
@@ -129,7 +129,11 @@ for (const { url, mparticle } of SITES) {
       it('leaves the DevTools panel empty', async () => {
         const read = await openPanel(browser, page);
         await wait(5_000); // give the panel a chance to (wrongly) render something
-        assert.equal(await read(`document.querySelectorAll('#list li').length`), 0, `panel rendered rows for ${url}`);
+        assert.equal(
+          await read(`document.querySelectorAll('#list li:not(.nav)').length`),
+          0,
+          `panel rendered rows for ${url}`,
+        );
         assert.equal(
           await read(`document.getElementById('count').textContent`),
           '0',

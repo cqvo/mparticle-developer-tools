@@ -53,8 +53,9 @@ document.getElementById('clear')!.addEventListener('click', clear);
 document.getElementById('collapse')!.addEventListener('click', () => {
   for (const d of document.querySelectorAll<HTMLDetailsElement>('#list details')) d.open = false;
 });
-chrome.devtools.network.onNavigated.addListener(() => {
+chrome.devtools.network.onNavigated.addListener((url: string) => {
   if (!(document.getElementById('preserve') as HTMLInputElement).checked) clear();
+  navRow(url);
   reloadVisible();
 });
 
@@ -156,16 +157,29 @@ function section(li: HTMLElement, title: string, record: Record<string, unknown>
     else rest[k] = v;
   }
   for (const [k, v] of objects.sort(([a], [b]) => a.localeCompare(b))) {
-    pairs(details, k, v, k === 'custom_attributes');
+    pairs(details, k, v);
   }
   pairs(details, restLabel, rest);
 }
 
 function eventDetails(li: HTMLElement, event: MpEvent, batch: Record<string, unknown>) {
-  section(li, 'Event Data', (event.data || {}) as Record<string, unknown>, 'event_attributes', true);
+  section(li, 'Event Data', (event.data || {}) as Record<string, unknown>, 'event_attributes', false);
   section(li, 'Batch Data', batch, 'batch_attributes', false);
 }
 
+function navRow(url: string) {
+  const li = document.createElement('li');
+  li.className = 'nav';
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  line(meta, time(Date.now()), 'time');
+  line(meta, `Navigating to ${url}`, 'url').title = url;
+  li.appendChild(meta);
+  list.appendChild(li);
+}
+
+// `bare` means no method/status/url in the meta line. Every request row renders as a
+// details/summary drawer (summary = the meta line) so its children stay hidden until clicked.
 function row(entry: chrome.devtools.network.Request, when: string | number, bare = false) {
   const li = document.createElement('li');
   const meta = document.createElement('div');
@@ -187,10 +201,15 @@ function row(entry: chrome.devtools.network.Request, when: string | number, bare
     const urlEl = line(meta, where, 'url');
     urlEl.title = entry.request.url;
   }
-  li.appendChild(meta);
+  const details = document.createElement('details');
+  details.className = 'row';
+  const summary = document.createElement('summary');
+  summary.appendChild(meta);
+  details.appendChild(summary);
+  li.appendChild(details);
   list.appendChild(li);
   countEl.textContent = String(++count);
-  return { li, meta };
+  return { li, meta, body: details };
 }
 
 chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.network.Request) => {
@@ -201,20 +220,20 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
   switch (c.kind) {
     case 'batch': {
       for (const { event, when } of c.rows) {
-        const { li, meta } = row(entry, when, true);
+        const { meta, body } = row(entry, when, true);
         summaryEl(meta, event);
-        eventDetails(li, event, c.batch);
-        raw(li, event);
+        eventDetails(body, event, c.batch);
+        raw(body, event);
       }
       return;
     }
 
     case 'identity': {
-      const { li, meta } = row(entry, c.when);
+      const { meta, body } = row(entry, c.when);
       const div = summaryEl(meta, { event_type: 'identity', data: { event_name: c.op } });
       meta.insertBefore(div, meta.querySelector('.url'));
-      pairs(li, 'known_identities', c.request.known_identities);
-      raw(li, c.request);
+      pairs(body, 'known_identities', c.request.known_identities);
+      raw(body, c.request);
 
       entry.getContent((text) => {
         const parsed = parseJson(text);
@@ -224,19 +243,19 @@ chrome.devtools.network.onRequestFinished.addListener((entry: chrome.devtools.ne
           if (typeof res.is_logged_in === 'boolean') {
             span(div, res.is_logged_in ? 'logged in' : 'logged out', res.is_logged_in ? 'ok' : 'muted');
           }
-          pairs(li, 'matched_identities', res.matched_identities);
+          pairs(body, 'matched_identities', res.matched_identities);
         }
-        raw(li, parsed, 'response');
+        raw(body, parsed, 'response');
       });
       return;
     }
 
     case 'other': {
-      const { li } = row(entry, c.when);
+      const { body } = row(entry, c.when);
       if (c.body === undefined) {
-        for (const p of entry.request.queryString || []) line(li, `${p.name}=${p.value}`, 'param');
+        for (const p of entry.request.queryString || []) line(body, `${p.name}=${p.value}`, 'param');
       } else {
-        raw(li, c.body);
+        raw(body, c.body);
       }
       return;
     }

@@ -5,11 +5,12 @@ import { entry, fakeMp, fakeUser, loadPanel } from './harness.ts';
 type Panel = ReturnType<typeof loadPanel>;
 
 const TS = Date.UTC(2026, 0, 2, 3, 4, 5); // 03:04:05 UTC
-const labels = (el: Element) => [...el.querySelectorAll('details:not(.section) > summary')].map((s) => s.textContent);
+const labels = (el: Element) =>
+  [...el.querySelectorAll('details:not(.section):not(.row) > summary')].map((s) => s.textContent);
 const sections = (el: Element) => [...el.querySelectorAll('details.section > summary')].map((s) => s.textContent);
 const opened = (el: Element) =>
-  [...el.querySelectorAll<HTMLDetailsElement>('details:not(.section)')].filter((d) => d.open).map((d) =>
-    d.querySelector('summary')!.textContent
+  [...el.querySelectorAll<HTMLDetailsElement>('details:not(.section):not(.row)')].filter((d) => d.open).map(
+    (d) => d.querySelector('summary')!.textContent,
   );
 const detail = (el: Element, label: string) =>
   [...el.querySelectorAll('details')].find((d) => d.querySelector('summary')!.textContent === label)!;
@@ -28,11 +29,14 @@ describe('events', () => {
     assert.equal(p.$('#count')!.textContent, '2');
 
     const li = rows[0];
-    assert.equal(li.querySelector('.time')!.textContent, '03:04:05');
+    const drawer = li.querySelector('details.row') as HTMLDetailsElement;
+    assert.ok(drawer);
+    assert.equal(drawer.open, false);
+    assert.equal(drawer.querySelector('summary > .meta .time')!.textContent, '03:04:05');
     assert.equal(li.querySelector('.method'), null);
     assert.equal(li.querySelector('.status'), null);
     assert.equal(li.querySelector('.url'), null);
-    assert.ok(li.querySelector('.meta .event'));
+    assert.ok(drawer.querySelector('summary > .meta .event'));
     assert.equal(li.querySelector('.type')!.textContent, 'custom_event');
     assert.equal(li.querySelector('.name')!.textContent, 'Checkout');
     assert.equal(rows[1].querySelector('.name')!.textContent, 'Purchase');
@@ -152,11 +156,11 @@ describe('events', () => {
     assert.deepEqual(labels(ast), ['event_attributes (1)', ...batchLabels, 'raw']);
 
     for (const row of [custom, ast]) {
-      assert.equal(detail(row, 'Event Data').open, true);
+      assert.equal(detail(row, 'Event Data').open, false);
       assert.equal(detail(row, 'Batch Data').open, false);
     }
-    assert.equal(detail(custom, 'custom_attributes (1)').open, true);
-    assert.deepEqual(opened(custom), ['custom_attributes (1)']);
+    assert.equal(detail(custom, 'custom_attributes (1)').open, false);
+    assert.deepEqual(opened(custom), []);
     assert.deepEqual(opened(ast), []);
   });
 
@@ -207,6 +211,14 @@ describe('events', () => {
       const rows = p.$$('#list li');
       assert.equal(rows.length, 1);
       const li = rows[0];
+      const drawer = li.querySelector('details.row') as HTMLDetailsElement;
+      assert.ok(drawer);
+      assert.equal(drawer.open, false);
+      assert.ok(drawer.querySelector('summary > .meta .time'));
+      assert.ok(drawer.querySelector('summary > .meta .method'));
+      assert.ok(drawer.querySelector('summary > .meta .status'));
+      assert.ok(drawer.querySelector('summary > .meta .url'));
+      assert.ok(drawer.querySelector('summary > .meta .event'));
       assert.equal(li.querySelector('.time')!.textContent, idTime);
       assert.equal(li.querySelector('.method')!.textContent, 'POST');
       assert.equal(li.querySelector('.status')!.textContent, '202');
@@ -310,7 +322,7 @@ describe('events', () => {
     assert.equal(p.$('#list li .url')!.textContent, 'not a url /v3/JS/key/events');
   });
 
-  it('collapses every expand', () => {
+  it('starts every expand collapsed, and the collapse button re-closes any opened by hand', () => {
     const p = loadPanel();
     p.request(entry({
       body: {
@@ -319,7 +331,9 @@ describe('events', () => {
       },
     }));
 
-    assert.ok(p.$$<HTMLDetailsElement>('#list details').some((d) => d.open));
+    const details = p.$$<HTMLDetailsElement>('#list details');
+    assert.ok(details.every((d) => !d.open));
+    details[0].open = true;
     p.click('collapse');
     assert.ok(p.$$<HTMLDetailsElement>('#list details').every((d) => !d.open));
   });
@@ -332,16 +346,24 @@ describe('events', () => {
     assert.equal(p.$('#count')!.textContent, '0');
   });
 
-  it('clears on navigation unless the log is preserved', () => {
+  it('clears on navigation unless the log is preserved, and adds a marker row', () => {
     const p = loadPanel();
     p.request(entry({ body: 'x' }));
-    p.navigate();
-    assert.equal(p.$$('#list li').length, 0);
+    p.navigate('https://shop.example/checkout');
+
+    // preserve off: clear() wipes the request row and resets the badge, then the marker lands
+    let rows = p.$$('#list li');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].querySelector('.url')!.textContent, 'Navigating to https://shop.example/checkout');
+    assert.equal(rows[0].querySelector('details'), null);
+    assert.equal(p.$('#count')!.textContent, '0'); // a navigation is not a request
 
     p.request(entry({ body: 'x' }));
     p.$<HTMLInputElement>('#preserve')!.checked = true;
     p.navigate();
-    assert.equal(p.$$('#list li').length, 1);
+    rows = p.$$('#list li');
+    assert.equal(rows.length, 3); // first marker, the request, the second marker
+    assert.equal(p.$$('#list li:not(.nav)').length, 1);
     assert.equal(p.$('#count')!.textContent, '1');
   });
 });

@@ -53,7 +53,7 @@ export function loadPanel({ mParticle }: { mParticle?: any } = {}) {
     $: <E extends Element = HTMLElement>(s: string) => doc.querySelector<E>(s),
     $$: <E extends Element = HTMLElement>(s: string) => [...doc.querySelectorAll<E>(s)],
     request: (entry: any) => listeners.request.forEach((fn) => fn(entry)),
-    navigate: () => listeners.navigated.forEach((fn) => fn()),
+    navigate: (url = 'https://example.com/') => listeners.navigated.forEach((fn) => fn(url)),
     click: (id: string) => doc.getElementById(id)!.click(),
     clickTab: (name: string) => doc.querySelector<HTMLElement>(`#tabs [data-tab="${name}"]`)!.click(),
     setInstance: (name: string) => {
