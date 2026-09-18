@@ -94,6 +94,7 @@ const NAME_OF: Record<string, (d: NonNullable<MpEvent['data']>) => unknown> = {
   custom_event: (d) => d.event_name,
   identity: (d) => d.event_name,
   commerce_event: (d) => d.product_action?.action,
+  application_state_transition: (d) => d.application_transition_type,
 };
 
 function summaryEl(li: HTMLElement, event: MpEvent) {

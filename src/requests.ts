@@ -6,6 +6,7 @@ export interface MpEvent {
   data?: {
     event_name?: string;
     screen_name?: string;
+    application_transition_type?: string;
     product_action?: { action?: string } | null;
     timestamp_unixtime_ms?: number;
     custom_attributes?: Record<string, unknown>;
